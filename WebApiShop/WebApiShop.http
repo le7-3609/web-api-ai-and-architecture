@@ -1,0 +1,94 @@
+@WebApiShop_HostAddress = http://localhost:5010
+
+GET {{WebApiShop_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
+
+### GEMINI - Create prompt for user product (with optional subCategoryId)
+POST {{WebApiShop_HostAddress}}/api/Gemini/userProduct
+Content-Type: application/json
+
+{
+    "subCategoryId": 10,
+    "userRequest": "Build a modern product page with a clear CTA and a short contact form"
+}
+
+###
+
+### GEMINI - Create prompt for category flow (subCategoryId is required)
+POST {{WebApiShop_HostAddress}}/api/Gemini/category
+Content-Type: application/json
+
+{
+    "subCategoryId": 10,
+    "userRequest": "I want SEO optimizations and a feature comparison block"
+}
+
+###
+
+### GEMINI - Create prompt for basic site flow
+POST {{WebApiShop_HostAddress}}/api/Gemini/basicSite
+Content-Type: application/json
+
+{
+    "userRequest": "A business website for a small company with Home, About, Services, and Contact pages"
+}
+
+###
+
+### GEMINI - Get generated prompt by id
+GET {{WebApiShop_HostAddress}}/api/Gemini/1
+Accept: application/json
+
+###
+
+### GEMINI - Update product prompt by promptId
+PUT {{WebApiShop_HostAddress}}/api/Gemini/1/userProduct
+Content-Type: application/json
+
+{
+    "userRequest": "Update the prompt to include an FAQ section and customer testimonials"
+}
+
+###
+
+### GEMINI - Update category prompt by promptId
+PUT {{WebApiShop_HostAddress}}/api/Gemini/1/category
+Content-Type: application/json
+
+{
+    "userRequest": "Add an advanced product grid with filtering options"
+}
+
+###
+
+### GEMINI - Update basic site prompt by promptId
+PUT {{WebApiShop_HostAddress}}/api/Gemini/1/basicSite
+Content-Type: application/json
+
+{
+    "userRequest": "Update the specification to include a blog and newsletter"
+}
+
+###
+
+### CHAT - Send message with short history
+POST {{WebApiShop_HostAddress}}/api/Chat
+Content-Type: application/json
+
+{
+    "history": [
+        {
+            "role": "user",
+            "text": "Hi, what does the prompt store product include?"
+        },
+        {
+            "role": "model",
+            "text": "The product includes ready-made prompts for website building with category-based customization."
+        }
+    ],
+    "newMessage": "How do I get started step by step?"
+}
+
+###

@@ -1,0 +1,134 @@
+﻿<!DOCTYPE html>
+<html lang="he">
+<head>
+    <meta charset="utf-8" />
+    <script defer src="UpDateDetails.js"></script>
+    <script src="checkPassword.js" defer></script>
+    <title>עדכון פרטי משתמש</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background-color: #f5f7fa;
+            margin: 0;
+            padding: 0;
+            direction: rtl;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            background: white;
+            padding: 30px 40px;
+            border-radius: 8px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+            width: 320px;
+        }
+
+        h3 {
+            margin-bottom: 25px;
+            text-align: center;
+            font-weight: 600;
+            color: #222;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            padding: 10px 12px;
+            margin-bottom: 20px;
+            border: 1.8px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+            input[type="text"]:focus,
+            input[type="email"]:focus,
+            input[type="password"]:focus {
+                border-color: #0066cc;
+                outline: none;
+                background-color: #f0f7ff;
+            }
+
+        button {
+            width: 100%;
+            padding: 12px 0;
+            background-color: #0066cc;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+            button:hover {
+                background-color: #004999;
+            }
+
+        .open {
+            text-align: center;
+            margin-bottom: 15px;
+            color: #0066cc;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: underline;
+            user-select: none;
+        }
+
+        .bar {
+            width: 100%;
+            display: none;
+        }
+
+        .updatedUser {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">        
+        <h3 class="text"></h3>
+        <h3>עדכון פרטי משתמש</h3>
+
+        <div class="open" onclick="toggleUpdate()"><u>לעדכון פרטים</u></div>
+
+        <div class="updatedUser">
+            <label for="userName">שם משתמש (מייל)</label>
+            <input type="email" placeholder="כתובת מייל" id="userName" />
+
+            <label for="firstName">שם פרטי</label>
+            <input type="text" placeholder="שם פרטי" id="firstName" />
+
+            <label for="lastName">שם משפחה</label>
+            <input type="text" placeholder="שם משפחה" id="lastName" />
+
+            <label for="phone">טלפון</label>
+            <input type="text" placeholder="טלפון" id="phone" />
+
+            <label for="password">סיסמא</label>
+            <input type="password" placeholder="סיסמא" id="password" />
+
+            <button id="checkBtn" type="button" onClick="checkPassword()">בדוק חוזק סיסמא</button>
+            <progress class="bar" max="100"></progress>
+            <button onclick="updateUserDetails()">עדכן</button>
+        </div>
+    </div>
+</body>
+</html>

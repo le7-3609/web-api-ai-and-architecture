@@ -1,0 +1,26 @@
+Technical Prompts Log: Repository Layer Testing Suite
+
+1. Initial Requirement Specification:
+Generate a testing suite for a .NET 9 Web API project, focusing on the Repository layer.
+Requirement: Implement two distinct types of tests: Unit Tests and Integration Tests.
+Integration Tests Logic: Implement 'Before' and 'After' Hooks for every test to manage the database lifecycle (check existence, build, and ensure deletion post-test to prevent data persistence).
+Unit Tests Logic: Utilize the Moq library for context isolation.
+Target: UserRepository. Include both Happy Path and UnHappy Path scenarios based on the provided ERD and source code.
+
+2. Coverage Analysis & Edge Cases:
+Evaluate the generated tests for UserRepository. Verify if all UnHappy Path scenarios are fully covered (e.g., failed authentication, missing users, invalid data formats). Supplement missing test cases accordingly.
+
+3. Testing Architecture Optimization:
+Perform a refactor by moving the 'GetMockContext' method to a centralized location or base class to promote reusability across all test classes and adhere to DRY principles.
+
+4. Database Connectivity Validation:
+Implement a specific test case to verify database accessibility. Determine and justify whether this should be categorized as a Unit Test or an Integration Test based on architectural standards.
+
+5. Integration Infrastructure Troubleshooting:
+Address SQL Server 'Database in use' exceptions occurring during the cleanup phase. Update the Database Fixture to force connection pool clearing and terminate active sessions prior to database deletion.
+
+6. Scaling to OrderRepository:
+Develop Unit and Integration tests for the OrderRepository. For Integration tests, implement a seeding mechanism that creates prerequisite data (User, Product) to satisfy Foreign Key constraints before executing order-related logic.
+
+7. Scaling to SubCategoryRepository:
+Develop the testing suite for SubCategoryRepository. Include a specific business logic test to ensure that the system prevents deletion of a category if it contains linked products, while allowing deletion of empty categories.

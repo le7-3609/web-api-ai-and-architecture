@@ -1,0 +1,144 @@
+﻿<!DOCTYPE html>
+<html lang="he">
+<head>
+    <meta charset="utf-8" />
+    <title>דף כניסה</title>
+    <script src="index.js" defer></script>
+    <script src="checkPassword.js" defer></script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background-color: #f5f7fa;
+            margin: 0;
+            padding: 0;
+            direction: rtl;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 30px 40px;
+            border-radius: 8px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+            width: 700px;
+            display: flex;
+            gap: 40px;
+        }
+        h3 {
+            margin-bottom: 25px;
+            text-align: center;
+            font-weight: 600;
+            color: #222;
+        }
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        input[type="text"],
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            padding: 10px 12px;
+            margin-bottom: 20px;
+            border: 1.8px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        input[type="password"]:focus {
+            border-color: #0066cc;
+            outline: none;
+            background-color: #f0f7ff;
+        }
+        button {
+            width: 100%;
+            padding: 12px 0;
+            background-color: #0066cc;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-bottom: 5px;
+        }
+        button:hover {
+            background-color: #004999;
+        }
+        .existingUser, .newUser {
+            width: 320px;
+            display: flex;
+            flex-direction: column;
+        }
+        .newUser {
+            display: none;
+        }
+        .addUser {
+            text-align: center;
+            color: #0066cc;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: underline;
+            user-select: none;
+            margin-top: 10px;
+        }
+        .bar {
+            width: 100%;
+            display:none;
+            margin-bottom:5px;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <div class="existingUser">
+            <h3>משתמש רשום</h3>
+
+            <label for="existingUserName">שם משתמש</label>
+            <input type="email" placeholder="כתובת מייל" id="existingUserName" required />
+
+            <label for="existingUserPassword">סיסמא</label>
+            <input type="password" placeholder="סיסמא" id="existingUserPassword" required />
+
+            <button onClick="login()">התחברות</button>
+
+            <div class="addUser" onclick="toggleNewUser()">משתמש חדש</div>
+        </div>
+
+        <div class="newUser">
+            <h3>משתמש חדש</h3>
+
+            <label for="userName">שם משתמש</label>
+            <input type="email" placeholder="כתובת מייל" id="userName" name="userName" required />
+
+            <label for="firstName">שם פרטי</label>
+            <input type="text" placeholder="שם פרטי" id="firstName" name="firstName" />
+
+            <label for="lastName">שם משפחה</label>
+            <input type="text" placeholder="שם משפחה" id="lastName" name="lastName" />
+
+            <label for="phone">טלפון</label>
+            <input type="text" placeholder="טלפון" id="phone" name="phone" />
+
+            <label for="password">סיסמא</label>
+            <input type="password" placeholder="סיסמא" id="password" name="password" required />
+
+            <button id="checkBtn" type="button" onClick="checkPassword()">בדוק חוזק סיסמא</button>
+            <progress class="bar" max="100"></progress>
+            <button onClick="createUser()">רישום</button>
+        </div>
+</body>
+</html>
