@@ -1,133 +1,106 @@
-# Copilot Instructions for `web-api-shop`
+# Copilot Instructions — WebApiShop
 
-## What this app does
-- Backend for an AI-driven prompt store that helps users design a website and generate high-quality technical prompts.
-- Users choose site type, platform, categories, and products; the API composes/stores prompt-related data and supports cart/order flows.
-- Main business domains: users/auth, catalog (main/sub categories + products), site templates, cart, order/review, Gemini prompt generation, and request logging/rating.
+## What This App Does
 
-## Tech stack
-- Language/runtime: C#, .NET 9 (`net9.0`)
-- Solution: `WebApiShop.sln`
-- API host: ASP.NET Core Web API (`WebApiShop` project)
-- Data access: EF Core, database-first style (`MyShopContext` + generated entities)
-- Mapping: AutoMapper (`Services/Mapper.cs`)
-- Logging/monitoring: NLog + custom middleware (`ErrorMiddleware`, `RatingMiddleware`)
-- AI integration: Gemini client/service in `Services/gemini.cs` + `Services/GeminiService.cs`
-- Tests: xUnit + Moq + EF Core SQLite in-memory integration fixture
+An **ASP.NET Core 9 Web API** backend for an "AI-Driven Website Builder Prompt Store." Users browse website component products, build a cart, place orders, and receive AI-generated prompts (via Google Gemini) that describe how to build their chosen website. The API serves an Angular 19+ SPA frontend.
 
-## Architecture and ownership boundaries
-- Layering must stay strict:
-  - Controllers: HTTP layer only (routes, status codes, request/response handling).
-  - Services: business logic, validation, orchestration across repositories/services.
-  - Repositories: EF queries and persistence only, no business policy.
-- Data flow is typically: `Controller -> Service Interface -> Service -> Repository Interface -> Repository -> DbContext`.
-- DTOs are contract layer and should shield API consumers from EF entities.
-- Prefer adding behavior in service layer first; repository updates should be query/storage-focused and minimal.
+## Technology Stack
 
-## Project map (high-value orientation)
-- `WebApiShop/`
-  - `Program.cs`: DI registration, middleware pipeline, DbContext setup, CORS, OpenAPI.
-  - `Controllers/`: API endpoints (Users, Carts, Products, Orders, Categories, Gemini, etc.).
-  - `Middlewares/`: centralized error handling and request rating logging.
-  - `WebApiShop.http`: quick request samples.
-  - `appsettings*.json`, `nlog.config`: runtime config.
-- `Services/`
-  - Service interfaces + implementations.
-  - `Mapper.cs`: AutoMapper profile for most DTO/entity mappings.
-- `Repositories/`
-  - Repository interfaces + EF implementations.
-  - `MyShopContext.cs`: EF model configuration (database-first generated style).
-- `Entities/`
-  - Generated entity classes; treat as generated source unless absolutely required.
-- `DTO/`
-  - Request/response records/classes.
-  - File naming is not always obvious (example: `CatalogDTO.cs` contains `ProductDTO`).
-- `Tests/`
-  - `UnitTests/` for services/repositories with mocks.
-  - `IntegretionTests/` for data behavior using `DatabaseFixture`/SQLite in-memory context.
+| Layer | Technology |
+|---|---|
+| Runtime | .NET 9 (C# with `<Nullable>enable</Nullable>`, `<ImplicitUsings>enable</ImplicitUsings>`) |
+| Web framework | ASP.NET Core Web API (REST, attribute routing) |
+| ORM | Entity Framework Core 9 — **Database-First** via EF Core Power Tools |
+| Database | SQL Server (connection string name: `"Home"` in `appsettings.Development.json`) |
+| Mapping | AutoMapper 16 (single `Profile` in `Services/Mapper.cs`) |
+| Logging | NLog (`nlog.config`) |
+| AI integration | Google Gemini via `Google.GenAI` NuGet package |
+| PDF generation | PDFsharp |
+| Password scoring | zxcvbn-core |
+| Auth | Google & Microsoft OAuth (`Google.Apis.Auth`, `Microsoft.Identity.Client`) |
+| API docs | Swagger via Swashbuckle (Development only) |
+| Testing | xUnit + Moq + Moq.EntityFrameworkCore; integration tests use in-memory SQLite |
 
-## Endpoint area map (where to look first)
-- Auth/users: `UsersController`
-- Password policy: `PasswordValidityController`
-- Catalog browsing/admin-like operations: `ProductsController`, `MainCategoriesController`, `SubCategoriesController`, `SiteTypeController`, `PlatformsController`
-- Site setup data: `BasicSiteController`
-- Cart lifecycle: `CartsController`
-- Orders/reviews: `OrdersController`
-- Prompt generation and storage: `GeminiController`
+## Solution Structure (6 projects)
 
-## Build, run, and test (Windows/PowerShell-first)
-- Preferred shell: **PowerShell** (avoid bashisms and Unix-only command syntax).
-- Use repo root (`web-api-shop`) before running commands.
-- Safe baseline commands:
-  - Restore: `dotnet restore WebApiShop.sln`
-  - Build all: `dotnet build WebApiShop.sln`
-  - Run API: `dotnet run --project WebApiShop/WebApiShop.csproj`
-  - Run all tests: `dotnet test Tests/Tests.csproj`
-- Scoped tests: prefer filter expressions over file-only targeting in runners that miss tests.
-  - Example: `dotnet test Tests/Tests.csproj --filter "FullyQualifiedName~ProductServiceUnitTests"`
-- Local URLs are in `WebApiShop/Properties/launchSettings.json` (`https://localhost:7072`, `http://localhost:5010`).
-- For fast manual API checks, use Swagger (Development) or `WebApiShop/WebApiShop.http`.
+```
+WebApiShop.sln
+├── WebApiShop/          → ASP.NET Core API host (Controllers, Middlewares, Program.cs)
+├── Services/            → Business logic, AutoMapper profile, AI integration
+├── Repositories/        → EF Core data access, DbContext (MyShopContext)
+├── Entities/            → Auto-generated EF Core entity classes (DO NOT hand-edit)
+├── DTO/                 → Data Transfer Objects (C# records)
+└── Tests/               → xUnit tests
+    ├── UnitTests/       → Service & repository unit tests (Moq)
+    └── IntegretionTests/→ SQLite integration tests 
+```
 
-## Coding conventions and implementation rules
-- Keep existing naming/style patterns even where typos exist in filenames (`Reposetory`, `Integretion`); do not rename broadly unless asked.
-- Follow async conventions consistently (`Task`, `await`, `*Async`).
-- Add validation/business guards in services, not in controllers/repositories.
-- Keep repository methods nullability-consistent with their interfaces.
-- Reuse existing DTO records and DataAnnotations rather than introducing parallel contract types.
-- Update AutoMapper mappings when DTO/entity shape changes.
-- If adding a new service/repository pair, register both in `WebApiShop/Program.cs` DI.
-- Make minimal, targeted edits; avoid drive-by refactors.
+**Dependency flow:** `WebApiShop → Services → Repositories → DTO → Entities`
 
-## Change playbooks (fast, reliable edits)
+## Build & Run
 
-### Add new API capability
-1. Add/adjust DTO contract in `DTO/`.
-2. Update service interface and implementation in `Services/`.
-3. Update repository interface/implementation in `Repositories/` if data access changes.
-4. Add/adjust mapping in `Services/Mapper.cs`.
-5. Wire DI in `WebApiShop/Program.cs` (if new types).
-6. Expose endpoint in relevant controller with proper status codes.
-7. Add or update unit tests first; then integration tests if DB behavior changed.
+```bash
+# Restore and build the full solution
+dotnet build WebApiShop.sln
 
-### Modify query/filter/paging behavior
-1. Validate/normalize input in service layer.
-2. Keep repository query composable (`AsQueryable`, filter/order/page on server side).
-3. Preserve return contracts (tuple/DTO shape).
-4. Add tests for edge cases (null filters, empty results, negative paging values, etc.).
+# Run the API (launches on http://localhost:5010, Swagger at /swagger)
+dotnet run --project WebApiShop
 
-### Add entity-backed field
-1. Confirm if this is DB-first generated territory (`Entities`, `MyShopContext`).
-2. Prefer regeneration/migration-safe approach; avoid manual edits to generated sections.
-3. Update DTO + mapper + service/repository + tests in one pass.
+# Run all tests
+dotnet test Tests/Tests.csproj
+```
 
-## Testing strategy in this repo
-- Unit tests commonly mock repositories and AutoMapper for service-level logic checks.
-- Integration tests use `Tests/IntegretionTests/DatabaseFixture.cs` with SQLite in-memory and custom context overrides.
-- If integration tests fail unexpectedly, inspect fixture setup before changing production code (schema creation, FK pragmas, default values).
-- Validate narrow scope first, then run full test project.
+**Prerequisites:** .NET 9 SDK, SQL Server instance. Update `ConnectionStrings:Home` in `WebApiShop/appsettings.Development.json` for your environment.
 
-## Configuration and secrets handling
-- `WebApiShop/appsettings.Development.json` may contain machine-specific connection strings and local placeholders.
-- `WebApiShop/nlog.config` includes environment-specific paths/email settings; do not treat as universally valid.
-- Never commit new real secrets, credentials, or machine-locked absolute paths.
-- Keep config additions environment-aware and backward-compatible where possible.
+**Known connection strings:** `"Home"` (personal dev) and `"School"` (classroom) are both in `appsettings.Development.json`. The app uses `"Home"` (see `Program.cs`).
 
-## Known pitfalls and time-savers
-- `WebApiShop.csproj` includes an absolute `.editorconfig` include from another machine; avoid copying this pattern.
-- Some DTO files/records are organized in non-obvious files; search symbols, not filenames only.
-- Nullable warnings already exist across projects; avoid introducing additional warnings in touched code.
-- Controller default query parameters may not align perfectly with nullability annotations; keep endpoint behavior stable unless explicitly changing API contract.
+## Coding Conventions
 
-## Existing tools and references
-- Business/architecture context: `README.md`
-- Test history/intent notes: `Tests/Promt gen tests.txt`
-- EF Power Tools configs: `Entities/efpt.config.json`, `Repositories/efpt.config.json`
-- Naming style hints: `WebApiShop/.editorconfig`
-- Local VS Code note: `.vscode/settings.json`
+### Naming
 
-## Practical agent workflow for this repository
-1. Identify target layer and matching interfaces before coding.
-2. Implement smallest end-to-end slice (DTO/service/repository/controller as needed).
-3. Run focused test(s), then broader test/build validation.
-4. If a failure occurs, fix root cause in changed area first; avoid unrelated cleanup.
-5. Report touched files, behavior change, and any remaining warnings clearly.
+- **Enforced by `.editorconfig`:** Types → `PascalCase`, methods → `PascalCase`, parameters → `camelCase`, private fields → `_camelCase`.
+- Controllers: `{PluralNoun}Controller` (e.g., `ProductsController`).
+- Services: `{Entity}Service` / `I{Entity}Service`.
+- Repositories: `{Entity}Repository` / `I{Entity}Repository`.
+- DTOs: suffix `DTO`. Input DTOs prefixed with action: `AddXxxDTO`, `UpdateXxxDTO`. Response: `XxxDTO`, `XxxSummaryDTO`, `XxxDetailsDTO`.
+- Async methods: end with `Async` suffix. `SuppressAsyncSuffixInActionNames = false` is set, so route names keep the suffix.
+
+### Key Patterns
+
+- **All I/O is `async/await`** — never use `.Result` or `.Wait()`.
+- **DTOs are C# `record` types** — use positional records for simple inputs, property-init records for complex responses.
+- **Validation attributes** (`[Required]`, `[Range]`, etc.) go on DTO record parameters.
+- **Controller actions** return `Task<ActionResult<T>>` or `Task<ActionResult>` and use `Ok()`, `CreatedAtAction()`, `NoContent()`, `NotFound()`, `BadRequest()`.
+- **Services** never expose entities to controllers — always map to/from DTOs via AutoMapper.
+- **Repositories** work only with entities — never reference DTOs.
+- **DI registration** in `Program.cs`: `AddScoped` for all service/repository pairs.
+- **AutoMapper** config is centralized in `Services/Mapper.cs` (extends `Profile`).
+- **Middleware pipeline order:** `UseStaticFiles → UseErrorMiddleware → UseRatingMiddleware → UseHttpsRedirection → UseCors → UseAuthentication → UseAuthorization → MapControllers`.
+
+### Entity Rules
+
+Entities in `Entities/` are **auto-generated** by EF Core Power Tools. **Do not hand-edit** these files. Schema changes must go through the database and be re-scaffolded. PKs are `long`. Navigation properties are `virtual`.
+
+### Testing Conventions
+
+- **Unit tests:** One test class per service/repository, using Moq. Pattern: `MethodName_Condition_ExpectedResult`. Use `[Fact]` attribute.
+- **Integration tests:** Use `DatabaseFixture` (SQLite in-memory) via `[Collection("Database collection")]`. Seed data directly via context. Group tests with `#region Happy Paths` / `#region Unhappy Paths`.
+- **TestBase helper:** `Tests/TestBase.cs` provides `GetMockContext<TContext, TEntity>()` for mocking DbSets.
+
+## Important Quirks (Do Not "Fix" Without Asking)
+
+- **Misspelled folder/file names** are established and referenced in `using`/`namespace` declarations. Keep them: `IntegretionTests/`, `ProductReposetory.cs`, `MainCategoryReposetory.cs`, `PlatformReposetory.cs`, `CartRepository .cs` (trailing space), `OrderAndReviewDTO .cs` (trailing space).
+- **Two integration test folders:** `IntegretionTests/` has real tests; `IntegrationTests/` has stubs with TODOs.
+- **`TestBase.cs`** uses `namespace Test` (singular) — this is intentional.
+- **`SiteTypeRepository` / `SiteTypeService`** are registered as `AddTransient` while all others use `AddScoped`.
+
+## Adding a New Feature Checklist
+
+1. **Entity** — If a new table: add to DB, re-scaffold with EF Core Power Tools, add `DbSet` to `MyShopContext`.
+2. **DTO** — Create record(s) in `DTO/` project with validation attributes.
+3. **Repository** — Create interface `I{Entity}Repository` and class `{Entity}Repository` in `Repositories/`. Inject `MyShopContext`. Return entities.
+4. **Service** — Create interface `I{Entity}Service` and class `{Entity}Service` in `Services/`. Inject repository + `IMapper`. Return DTOs.
+5. **Mapper** — Add `CreateMap<Entity, DTO>()` entries in `Services/Mapper.cs`.
+6. **Controller** — Create `{PluralNoun}Controller` in `WebApiShop/Controllers/`. Inject service interface. Use `[Route("api/[controller]")]` and `[ApiController]`.
+7. **DI** — Register interface→implementation pair as `AddScoped` in `Program.cs`.
+8. **Tests** — Add unit tests in `Tests/UnitTests/` and integration tests in `Tests/IntegretionTests/`.
