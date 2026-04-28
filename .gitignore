@@ -5,6 +5,9 @@
 
 # Environment files with secrets
 .env
+secrets.json
+appsettings.*.json
+!appsettings.Development.json
 
 # User-specific files
 *.rsuser

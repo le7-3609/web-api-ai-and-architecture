@@ -1,5 +1,6 @@
 ﻿using DTO;
 using MailKit.Search;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Services;
 using System.Text.Json;
@@ -38,6 +39,7 @@ namespace WebApiShop.Controllers
 
         // PUT api/<SiteTypeController>/5
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin")] 
         public async Task<ActionResult> UpdateByMngAsync(int id, SiteTypeDTO dto)
         {
             var updatedSiteType = await _siteTypeService.UpdateByMngAsync(id, dto);

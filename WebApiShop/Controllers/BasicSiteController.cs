@@ -1,5 +1,6 @@
 ﻿using DTO;
 using Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Services;
 using System.Threading.Tasks;
@@ -10,6 +11,7 @@ namespace WebApiShop.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize] // All basic site operations require an authenticated user.
     public class BasicSiteController : ControllerBase
     {
         private readonly IBasicSiteService _basicSiteService;

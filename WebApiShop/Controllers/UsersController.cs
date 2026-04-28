@@ -1,4 +1,5 @@
 ﻿using DTO;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Services;
 
@@ -19,6 +20,7 @@ namespace WebApiShop.Controllers
 
         // GET api/<UsersController>
         [HttpGet]
+        [Authorize(Roles = "Admin")] // Admin only – exposes all user records.
         public async Task<ActionResult<IEnumerable<UserDTO>>> GetAllAsync()
         {
             var users = await _userService.GetAllAsync();
@@ -31,6 +33,7 @@ namespace WebApiShop.Controllers
 
         // GET api/<UsersController>/5
         [HttpGet("{id}")]
+        [Authorize] 
         public async Task<ActionResult<UserProfileDTO>> GetByIdAsync(int id)
         {
             UserProfileDTO? user = await _userService.GetByIdAsync(id);
@@ -43,6 +46,7 @@ namespace WebApiShop.Controllers
 
         // GET api/<UsersController>/5/orders
         [HttpGet("{userId}/orders")]
+        [Authorize] 
         public async Task<ActionResult<IEnumerable<UserProfileDTO>>> GetAllOrdersAsync(int userId)
         {
             var userOrders = await _userService.GetAllOrdersAsync(userId);
@@ -54,53 +58,11 @@ namespace WebApiShop.Controllers
         }
 
         // POST api/<UsersController>
-        [HttpPost("register")]
-        public async Task<ActionResult<UserProfileDTO>> RegisterAsync([FromBody] RegisterDTO dto)
-        {
-            var (newUser, error) = await _userService.RegisterAsync(dto);
-            if (newUser != null)
-            {
-                return CreatedAtAction(nameof(GetByIdAsync), new { id = newUser.UserId }, newUser);
-            }
-            return BadRequest(error);
-        }
-
-        // POST api/<UsersController>
-        [HttpPost("login")]
-        public async Task<ActionResult<UserProfileDTO>> LoginAsync([FromBody] LoginDTO dto)
-        {
-            _logger.LogInformation($"Login attempted with User Name , {dto.Email} and password {dto.Password}");
-            UserProfileDTO user = await _userService.LoginAsync(dto);
-            if (user != null)
-            {
-                return Ok(user);
-            }
-            return Unauthorized("Invalid email or password");
-        }
-
-        // POST api/users/social-login
-        [HttpPost("social-login")]
-        public async Task<ActionResult<UserProfileDTO>> SocialLoginAsync([FromBody] SocialLoginDTO dto)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            _logger.LogInformation($"Social login attempt: Provider={dto.Provider}");
-
-            var userProfile = await _userService.SocialLoginAsync(dto);
-
-            if (userProfile == null)
-            {
-                _logger.LogWarning($"Social login failed for provider: {dto.Provider}");
-                return Unauthorized("Authentication failed with external provider.");
-            }
-            return Ok(userProfile);
-        }
+        // Moved to POST api/auth/register — login now issues an HttpOnly JWT cookie.
 
         // PUT api/<UsersController>/5
         [HttpPut("{id}")]
+        [Authorize] 
         public async Task<ActionResult> UpdateAsync(int id, [FromBody] UpdateUserDTO dto)
         {
             var isUpdated = await _userService.UpdateAsync(id, dto);

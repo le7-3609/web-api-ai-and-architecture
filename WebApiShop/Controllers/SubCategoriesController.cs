@@ -1,4 +1,5 @@
 ﻿using DTO;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Services;
@@ -55,6 +56,7 @@ namespace WebApiShop.Controllers
 
         // POST api/<CategoryController>
         [HttpPost]
+        [Authorize(Roles = "Admin")] 
         async public Task<ActionResult<SubCategoryDTO>> AddSubCategoryAsync([FromBody] AddSubCategoryDTO dto)
         {
             SubCategoryDTO subCategory = await _subCategoryService.AddSubCategoryAsync(dto);
@@ -63,6 +65,7 @@ namespace WebApiShop.Controllers
 
         // PUT api/<CategoryController>/5
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin")] 
         async public Task UpdateSubCategoryAsync(int id, [FromBody] SubCategoryDTO category)
         {
             await _subCategoryService.UpdateSubCategoryAsync(id, category);
@@ -70,6 +73,7 @@ namespace WebApiShop.Controllers
 
         // DELETE api/<CategoryController>/5
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")] 
         async public Task<ActionResult> DeleteSubCategoryAsync(int id)
         {
             try

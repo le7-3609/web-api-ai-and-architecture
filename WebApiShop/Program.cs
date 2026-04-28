@@ -1,22 +1,22 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.IdentityModel.Tokens;
 using NLog.Web;
 using Entities;
 using Repositories;
 using Services;
 using StackExchange.Redis;
+using System.Text;
 using System.Text.Json;
 using WebApiShop;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 builder.Host.UseNLog();
 
-// Redis
 var redisConnectionString = builder.Configuration["Redis:ConnectionString"] ?? string.Empty;
 if (!string.IsNullOrWhiteSpace(redisConnectionString))
 {
@@ -25,7 +25,6 @@ if (!string.IsNullOrWhiteSpace(redisConnectionString))
 }
 else
 {
-    // Provide a no-op multiplexer substitute via a disabled connection so the app starts without Redis
     builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
         ConnectionMultiplexer.Connect("localhost:6380,abortConnect=false,connectTimeout=500"));
 }
@@ -84,8 +83,40 @@ builder.Services.Configure<GeminiSettings>(options =>
         ?? string.Empty;
 });
 
-// Add Authentication services
-builder.Services.AddAuthentication();
+// ── JWT / Authentication ─────────────────────────────────────────────────────
+// Bind configuration – override Jwt:SecretKey in User Secrets / env vars.
+builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
+builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+
+var jwtSection = builder.Configuration.GetSection("Jwt").Get<JwtSettings>()
+    ?? throw new InvalidOperationException("Jwt configuration section is missing.");
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(jwtSection.SecretKey)),
+            ValidateIssuer = true,
+            ValidIssuer = jwtSection.Issuer,
+            ValidateAudience = true,
+            ValidAudience = jwtSection.Audience,
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = ctx =>
+            {
+                ctx.Token = ctx.Request.Cookies["access_token"];
+                return Task.CompletedTask;
+            }
+        };
+    });
 
 builder.Services.AddControllers(options =>
 {
@@ -107,15 +138,15 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowAngular",
         policy =>
         {
-            policy.WithOrigins("http://localhost:5000") 
+            policy.WithOrigins("http://localhost:5000")
                   .AllowAnyHeader()
-                  .AllowAnyMethod();
+                  .AllowAnyMethod()
+                  .AllowCredentials(); // Required for the browser to send/receive HttpOnly cookies.
         });
 });
 #endregion
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -134,6 +165,8 @@ app.UseRatingMiddleware();
 app.UseHttpsRedirection();
 
 app.UseCors("AllowAngular");
+
+app.UseJwtMiddleware();
 
 app.UseAuthentication();
 

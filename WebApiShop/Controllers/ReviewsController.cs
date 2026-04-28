@@ -1,4 +1,5 @@
 using DTO;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Services;
 
@@ -23,6 +24,7 @@ namespace WebApiShop.Controllers
 
         // GET api/reviews
         [HttpGet]
+        [Authorize(Roles = "Admin")] // Admin only – full review list.
         public async Task<ActionResult<IEnumerable<ReviewSummaryDTO>>> GetAllReviewsAsync()
         {
             var reviews = await _reviewService.GetAllReviewsAsync();
@@ -38,6 +40,7 @@ namespace WebApiShop.Controllers
 
         // GET api/reviews/{orderId}
         [HttpGet("{orderId}")]
+        [Authorize] 
         public async Task<ActionResult<ReviewDTO>> GetReviewByOrderIdAsync(int orderId)
         {
             var review = await _reviewService.GetReviewByOrderIdAsync(orderId);
@@ -50,6 +53,7 @@ namespace WebApiShop.Controllers
 
         // POST api/reviews/{orderId}
         [HttpPost("{orderId}")]
+        [Authorize] 
         public async Task<ActionResult<ReviewDTO>> AddReviewAsync(int orderId, [FromForm] AddReviewDTO dto)
         {
             var newReview = await _reviewService.AddReviewAsync(orderId, dto);
@@ -62,6 +66,7 @@ namespace WebApiShop.Controllers
 
         // PUT api/reviews
         [HttpPut]
+        [Authorize] 
         public async Task<ActionResult> UpdateReviewAsync([FromBody] ReviewDTO dto)
         {
             var existingReview = await _reviewService.GetReviewByOrderIdAsync((int)dto.OrderId);

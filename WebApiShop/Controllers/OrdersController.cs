@@ -1,4 +1,5 @@
 ﻿using DTO;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Services;
 
@@ -17,6 +18,7 @@ namespace WebApiShop.Controllers
 
         // GET api/<OrdersController>/5
         [HttpGet("{id}")]
+        [Authorize] 
         public async Task<ActionResult<OrderDetailsDTO>> GetByIdAsync(int id)
         {
             OrderDetailsDTO order = await _orderService.GetByIdAsync(id);
@@ -29,6 +31,7 @@ namespace WebApiShop.Controllers
 
         // GET api/<OrdersController>
         [HttpGet]
+        [Authorize(Roles = "Admin")] 
         public async Task<ActionResult<IEnumerable<OrdersResponseDTO>>> GetOrdersAsync()
         {
             var orders = await _orderService.GetOrdersAsync();
@@ -48,6 +51,7 @@ namespace WebApiShop.Controllers
 
         // GET api/<OrdersController>/statuses
         [HttpGet("statuses")]
+        [Authorize(Roles = "Admin")] 
         public async Task<ActionResult<IEnumerable<StatusesDTO>>> GetStatusesAsync()
         {
             var statuses = await _orderService.GetStatusesAsync();
@@ -60,6 +64,7 @@ namespace WebApiShop.Controllers
 
         // POST api/Orders/carts/5
         [HttpPost("carts/{cartId}")]
+        [Authorize] 
         public async Task<ActionResult<OrderDetailsDTO>> AddOrderAsync(int cartId)
         {
             try
@@ -79,6 +84,7 @@ namespace WebApiShop.Controllers
 
         // PUT api/<OrdersController>/5
         [HttpPut]
+        [Authorize(Roles = "Admin")] 
         public async Task<ActionResult> UpdateStatusAsync([FromBody] OrderSummaryDTO dto)
         {
             await _orderService.UpdateStatusAsync(dto);
@@ -87,6 +93,7 @@ namespace WebApiShop.Controllers
 
         // GET api/<OrdersController>/5/items
         [HttpGet("{orderId}/orderItems")]
+        [Authorize] 
         public async Task<ActionResult<IEnumerable<OrderItemDTO>>> GetOrderItemsAsync(int orderId)
         {
             var orderItems = await _orderService.GetOrderItemsAsync(orderId);
@@ -99,6 +106,7 @@ namespace WebApiShop.Controllers
 
         // GET api/<OrdersController>/5/prompt
         [HttpGet("{orderId}/prompt")]
+        [Authorize] 
         public async Task<ActionResult<string>> GetOrderPromptAsync(int orderId)
         {
             var prompt = await _orderService.GetOrderPromptAsync(orderId);

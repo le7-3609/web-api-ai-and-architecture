@@ -59,5 +59,20 @@ namespace Repositories
         {
             return await _context.Users.FirstOrDefaultAsync(u => u.Provider == provider && u.ProviderId == providerId);
         }
+
+        public async Task<User?> GetByRefreshTokenAsync(string refreshTokenHash)
+        {
+            return await _context.Users.FirstOrDefaultAsync(u => u.RefreshToken == refreshTokenHash);
+        }
+
+        public async Task SaveRefreshTokenAsync(long userId, string? refreshTokenHash, DateTime? expiry)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == userId);
+            if (user == null) return;
+
+            user.RefreshToken = refreshTokenHash;
+            user.RefreshTokenExpiry = expiry;
+            await _context.SaveChangesAsync();
+        }
     }
 }

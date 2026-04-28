@@ -11,6 +11,7 @@ namespace Services
             CreateMap<RegisterDTO, User>();
             CreateMap<User, UserProfileDTO>();
             CreateMap<User, UserDTO>();
+            CreateMap<User, AuthResponseDTO>();
 
 
             CreateMap<Cart, CartDTO>()

@@ -1,5 +1,6 @@
 ﻿using DTO;
 using System;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Services;
 using System.Reflection.Metadata.Ecma335;
@@ -42,6 +43,7 @@ namespace WebApiShop.Controllers
 
         // POST api/<MainCategoriesController>
         [HttpPost]
+        [Authorize(Roles = "Admin")] 
         async public Task<ActionResult<MainCategoryDTO>> AddMainCategoryAsync([FromBody] AddMainCategoryDTO dto)
         {
             var all = await _mainCategoryService.GetMainCategoryAsync();
@@ -56,6 +58,7 @@ namespace WebApiShop.Controllers
 
         // PUT api/<MainCategoriesController>/5
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin")] 
         async public Task<ActionResult> Put(int id, [FromBody] AddMainCategoryDTO dto)
         {
             if (id <= 0 || dto == null)
@@ -70,6 +73,7 @@ namespace WebApiShop.Controllers
 
         // DELETE api/<MainCategoriesController>/5
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")] 
         async public Task<ActionResult> DeleteMainCategoryAsync(int id)
         {
             try

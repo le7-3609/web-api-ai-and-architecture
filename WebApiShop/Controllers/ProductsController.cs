@@ -1,5 +1,6 @@
 ﻿using DTO;
 using System.Linq;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Services;
 
@@ -18,6 +19,7 @@ namespace WebApiShop.Controllers
 
         // GET: api/<ProductsController>/5
         [HttpGet("{id}")]
+
         public async Task<ActionResult<ProductDTO>> GetProductByIdAsync(int id)
         {
             ProductDTO? product = await _productService.GetProductByIdAsync(id);
@@ -40,6 +42,7 @@ namespace WebApiShop.Controllers
 
         // POST api/<ProductsController>
         [HttpPost]
+        [Authorize(Roles = "Admin")] 
         public async Task<ActionResult<ProductDTO>> AddProductAsync([FromBody] AdminProductDTO dto)
         {
             ProductDTO product = await _productService.AddProductAsync(dto);
@@ -48,6 +51,7 @@ namespace WebApiShop.Controllers
 
         // PUT api/<ProductsController>/5
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin")] 
         public async Task<ActionResult> UpdateProductAsync(int id, [FromBody] AdminProductDTO dto)
         {
             if (dto == null)
@@ -59,6 +63,7 @@ namespace WebApiShop.Controllers
 
         // DELETE api/<ProductsController>/5
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")] 
         public async Task<ActionResult> DeleteProductAsync(int id)
         {
             try

@@ -24,6 +24,7 @@ The server is built using **ASP.NET Core 9 (Web API)** following modern software
 * **Framework:** .NET 9 (REST API)
 * **ORM:** Entity Framework Core (Database-First approach)
 * **Caching:** Redis (via Docker Compose) + StackExchange.Redis
+* **Authentication:** JWT (access + refresh tokens) via `Microsoft.IdentityModel.JsonWebTokens`
 * **Logging:** nLog
 * **Mapping:** AutoMapper
 
@@ -36,6 +37,24 @@ The server is built using **ASP.NET Core 9 (Web API)** following modern software
 * **Asynchronous Programming:** All I/O and database operations are `async/await` based to maximize scalability and thread efficiency.
 * **Data Transfer Objects (DTO):** Implemented using **C# Records** for immutable, concise data handling. This prevents circular dependencies and separates internal entities from API contracts.
 * **Configuration:** Managed externally via `appsettings.json` for environment flexibility.
+* **Security:** JWT secret stored in .NET User Secrets (never committed to source control).
+
+### Authentication & Authorization (JWT)
+Authentication is handled via a stateless JWT flow with HttpOnly cookies to prevent XSS:
+
+| Endpoint | Description |
+| :--- | :--- |
+| `POST /api/Auth/register` | Register a new user; returns access + refresh tokens as HttpOnly cookies |
+| `POST /api/Auth/login` | Authenticate with email/password; sets auth cookies |
+| `POST /api/Auth/refresh` | Issue a new access token using the refresh token cookie |
+| `POST /api/Auth/logout` | Revoke refresh token and clear auth cookies |
+| `POST /api/Auth/social-login` | Authenticate via a third-party provider (e.g. Google) |
+
+**Token transport:** Both tokens are set as `HttpOnly + Secure + SameSite=Strict` cookies — never exposed to JavaScript. The refresh token cookie is scoped to `/api/auth/refresh` only.
+
+**Middleware:** `JwtMiddleware` runs on every request, reads the `access_token` cookie, validates it via `IJwtService`, and populates `HttpContext.User` so `[Authorize]` works transparently across all controllers.
+
+**Secret management:** `Jwt:SecretKey` is stored in .NET User Secrets locally and must be provided via environment variable in production. A `secrets.template.json` is included as a reference.
 
 ### Caching Strategy (Products)
 Product reads are served through a **cache-aside** pattern backed by Redis:
@@ -77,13 +96,18 @@ While this repository contains the Back-end, it is designed to serve a modern **
 * .NET 9 SDK
 * SQL Server
 * Docker Desktop (for Redis)
+* .NET User Secrets (for `Jwt:SecretKey` — see `secrets.template.json`)
 
 ### Installation & Setup
 1.  **Clone the repository:**
     ```bash
     git clone https://github.com/le7-3609/web-api-shop
     ```
-2.  **Configuration:** Update the connection string in `appsettings.Development.json` to point to your SQL Server instance.
+2.  **Configuration:** Update the connection string in `appsettings.Development.json` to point to your SQL Server instance. Copy `secrets.template.json` as a reference and initialize User Secrets:
+    ```bash
+    dotnet user-secrets init --project WebApiShop
+    dotnet user-secrets set "Jwt:SecretKey" "<your-strong-secret>" --project WebApiShop
+    ```
 3.  **Start Redis** (requires Docker Desktop running):
     ```bash
     docker compose up -d
