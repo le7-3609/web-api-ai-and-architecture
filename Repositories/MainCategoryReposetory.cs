@@ -36,7 +36,6 @@ namespace Repositories
         async public Task UpdateMainCategoryAsync(MainCategory mainCategoryToUpdate)
         {
 
-            // If an instance with the same key is already tracked, apply the new values
             var local = _context.MainCategories.Local.FirstOrDefault(e => e.MainCategoryId == mainCategoryToUpdate.MainCategoryId);
             if (local != null && !ReferenceEquals(local, mainCategoryToUpdate))
             {

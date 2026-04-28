@@ -1,9 +1,5 @@
 namespace Services;
 
-/// <summary>
-/// Bound to the "Jwt" section in appsettings.json.
-/// Store the real SecretKey in User Secrets or environment variables – never in source control.
-/// </summary>
 public class JwtSettings
 {
     public string SecretKey { get; set; } = string.Empty;

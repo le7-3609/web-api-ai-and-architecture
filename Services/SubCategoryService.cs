@@ -51,14 +51,12 @@ namespace Services
 
         async public Task<SubCategoryDTO> AddSubCategoryAsync(AddSubCategoryDTO dto)
         {
-            // Check if a SubCategory with the same name already exists
             var existingWithSameName = await _subCategoryRepository.GetByNameAsync(dto.SubCategoryName);
             if (existingWithSameName != null)
             {
                 throw new InvalidOperationException($"SubCategory with name '{dto.SubCategoryName}' already exists");
             }
             
-            // Validate MainCategoryId exists
             var mainCategoryExists = await _subCategoryRepository.MainCategoryExistsAsync((int)dto.MainCategoryId);
             if (!mainCategoryExists)
             {

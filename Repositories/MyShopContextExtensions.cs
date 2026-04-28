@@ -1,5 +1,3 @@
-// Partial implementation of OnModelCreatingPartial to configure the columns
-// added in Entities/UserRole.cs without touching the auto-generated context file.
 using Microsoft.EntityFrameworkCore;
 
 namespace Repositories;

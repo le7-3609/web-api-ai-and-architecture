@@ -57,13 +57,12 @@ namespace Services
             var existingCategory = await _mainCategoryRepository.GetMainCategoryByIdAsync(id);
             if (existingCategory == null)
             {
-                return false; // not found
+                return false; 
             }
 
             MainCategory mainCategory = _mapper.Map<MainCategory>(dto);
             mainCategory.MainCategoryId = id;
 
-            // Preserve existing prompt if not provided
             if (string.IsNullOrWhiteSpace(dto.MainCategoryPrompt))
             {
                 mainCategory.MainCategoryPrompt = existingCategory.MainCategoryPrompt;

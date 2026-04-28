@@ -7,11 +7,7 @@ using System.Security.Claims;
 
 namespace WebApiShop.Controllers;
 
-/// <summary>
-/// Handles authentication flows: login, register, token refresh, and logout.
-/// All tokens are transported exclusively via HttpOnly + Secure cookies to prevent XSS.
-/// SameSite=Strict provides first-layer CSRF protection.
-/// </summary>
+
 [Route("api/[controller]")]
 [ApiController]
 public class AuthController : ControllerBase
@@ -53,9 +49,7 @@ public class AuthController : ControllerBase
     }
 
     // POST api/auth/refresh
-    // No [Authorize] – the access token may be expired; only the refresh token cookie is needed.
     [HttpPost("refresh")]
-    [AllowAnonymous]
     public async Task<ActionResult<AuthResponseDTO>> RefreshAsync()
     {
         var rawRefreshToken = Request.Cookies[RefreshTokenCookie];
@@ -85,7 +79,6 @@ public class AuthController : ControllerBase
 
     // POST api/auth/social-login
     [HttpPost("social-login")]
-    [AllowAnonymous]
     public async Task<ActionResult<AuthResponseDTO>> SocialLoginAsync([FromBody] SocialLoginDTO dto)
     {
         var (result, error) = await _authService.SocialLoginAsync(dto);
@@ -95,7 +88,6 @@ public class AuthController : ControllerBase
         return Ok(result.UserInfo);
     }
 
-    // ── helpers ──────────────────────────────────────────────────────────────
 
     private void SetAuthCookies(string accessToken, string refreshToken)
     {
@@ -113,7 +105,6 @@ public class AuthController : ControllerBase
             Secure = true,
             SameSite = SameSiteMode.Strict,
             Expires = DateTimeOffset.UtcNow.AddDays(_jwtSettings.RefreshTokenExpiryDays),
-            // Restrict refresh token to the refresh endpoint only.
             Path = "/api/auth/refresh"
         });
     }

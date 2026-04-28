@@ -40,7 +40,6 @@ namespace Tests.IntegrationTests
         [Fact]
         public async Task AddCartItemAsync_AddsItem()
         {
-            // seed minimal dependencies
             var user = new User { Email = "itemuser@test.com", Password = "p", FirstName = "A", LastName = "B", Provider = "Local" };
             _context.Users.Add(user);
             _context.SiteTypes.Add(new SiteType { SiteTypeId = 2, SiteTypeName = "t2", Price = 1 });

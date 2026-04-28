@@ -44,28 +44,24 @@ namespace  Services
             Platform platform = new Platform{PlatformName = platformName};
             platform = await _platformRepository.AddPlatformAsync(platform);
             //add prompt with gemini
-            // dto.PlatformsPrompt = "fdfbnfgn";
             return _mapper.Map<PlatformsDTO>(platform);
         }
 
         async public Task<bool> UpdatePlatformAsync(int id, PlatformsDTO dto)
         {
-            // Ensure platform exists by id
             var existingById = await _platformRepository.GetPlatformByIdAsync(id);
             if (existingById == null)
             {
-                return false; // not found
+                return false; 
             }
 
-            // Check for name conflict with other records
             var existingByName = await _platformRepository.GetPlatformByNameAsync(dto.PlatformName);
             if (existingByName != null && existingByName.PlatformId != id)
             {
-                return false; // conflict
+                return false; 
             }
 
             Platform platform = _mapper.Map<Platform>(dto);
-            // ensure id is set
             platform.PlatformId = id;
 
             return await _platformRepository.UpdatePlatformAsync(id, platform);

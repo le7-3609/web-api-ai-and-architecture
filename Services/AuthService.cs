@@ -84,12 +84,10 @@ public class AuthService : IAuthService
 
     public async Task<(AuthResultDTO? Result, string? Error)> SocialLoginAsync(SocialLoginDTO dto)
     {
-        // IUserService.SocialLoginAsync handles external token verification and find-or-create.
         var profile = await _userService.SocialLoginAsync(dto);
         if (profile == null)
             return (null, "Authentication failed with external provider.");
 
-        // Fetch the full entity so we have the Role claim for the JWT.
         var user = await _userRepository.GetByIdAsync((int)profile.UserId);
         if (user == null)
             return (null, "User not found after social login.");
@@ -98,7 +96,6 @@ public class AuthService : IAuthService
         return (result, null);
     }
 
-    // ── helpers ──────────────────────────────────────────────────────────────
 
     private async Task<AuthResultDTO> IssueTokensAsync(User user)
     {
@@ -107,14 +104,12 @@ public class AuthService : IAuthService
         var refreshTokenHash = HashToken(rawRefreshToken);
         var expiry = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpiryDays);
 
-        // Persist the hash – the raw token is only ever held by the client cookie.
         await _userRepository.SaveRefreshTokenAsync(user.UserId, refreshTokenHash, expiry);
 
         var userInfo = _mapper.Map<AuthResponseDTO>(user);
         return new AuthResultDTO(userInfo, accessToken, rawRefreshToken);
     }
 
-    /// <summary>One-way SHA-256 hash used to store the refresh token safely in the DB.</summary>
     private static string HashToken(string rawToken)
     {
         var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(rawToken));
