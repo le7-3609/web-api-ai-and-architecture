@@ -130,7 +130,7 @@ namespace Services
                 _logger.LogWarning(ex, "Redis error reading version key; using version 0");
             }
 
-            var ids = subCategoryIds.Length > 0
+            var ids = subCategoryIds?.Length > 0
                 ? string.Join(",", subCategoryIds.Select(x => x?.ToString() ?? "null").OrderBy(x => x))
                 : "none";
 

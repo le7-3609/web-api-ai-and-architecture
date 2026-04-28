@@ -166,8 +166,6 @@ app.UseHttpsRedirection();
 
 app.UseCors("AllowAngular");
 
-app.UseJwtMiddleware();
-
 app.UseAuthentication();
 
 app.UseAuthorization();

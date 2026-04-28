@@ -24,7 +24,6 @@ namespace WebApiShop.Controllers
 
         // GET api/reviews
         [HttpGet]
-        [Authorize(Roles = "Admin")] // Admin only – full review list.
         public async Task<ActionResult<IEnumerable<ReviewSummaryDTO>>> GetAllReviewsAsync()
         {
             var reviews = await _reviewService.GetAllReviewsAsync();

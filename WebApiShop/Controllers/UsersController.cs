@@ -20,7 +20,7 @@ namespace WebApiShop.Controllers
 
         // GET api/<UsersController>
         [HttpGet]
-        [Authorize(Roles = "Admin")] // Admin only – exposes all user records.
+        [Authorize(Roles = "Admin")] 
         public async Task<ActionResult<IEnumerable<UserDTO>>> GetAllAsync()
         {
             var users = await _userService.GetAllAsync();
