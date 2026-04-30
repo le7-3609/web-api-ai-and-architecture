@@ -72,6 +72,20 @@ public class AuthController : ControllerBase
         return NoContent();
     }
 
+    // GET api/auth/me
+    [HttpGet("me")]
+    [Authorize]
+    public ActionResult<AuthResponseDTO> MeAsync()
+    {
+        var userId = long.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var email = User.FindFirstValue(ClaimTypes.Email)!;
+        var role = User.FindFirstValue(ClaimTypes.Role)!;
+        var firstName = User.FindFirstValue(ClaimTypes.GivenName);
+        var lastName = User.FindFirstValue(ClaimTypes.Surname);
+
+        return Ok(new AuthResponseDTO(userId, email, firstName, lastName, role));
+    }
+
     // POST api/auth/social-login
     [HttpPost("social-login")]
     public async Task<ActionResult<AuthResponseDTO>> SocialLoginAsync([FromBody] SocialLoginDTO dto)

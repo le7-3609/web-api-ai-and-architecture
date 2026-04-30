@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -128,6 +129,7 @@ builder.Services.AddControllers(options =>
 {
     options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
 });
+builder.Services.AddRateLimiter(RateLimitMiddleware.Configure);
 builder.Services.AddOpenApi();
 builder.Services.AddDbContext<MyShopContext>(option => option.UseSqlServer(builder.Configuration.GetConnectionString("Home")));
 builder.Services.AddAutoMapper(cfg =>
@@ -168,10 +170,12 @@ app.UseHttpsRedirection();
 
 app.UseCors("AllowAngular");
 
+app.UseRateLimiter();
+
 app.UseAuthentication();
 
 app.UseAuthorization();
 
-app.MapControllers();
+app.MapControllers().RequireRateLimiting(RateLimitMiddleware.PolicyName);
 
 app.Run();
