@@ -9,5 +9,20 @@ services:
     volumes:
       - redis-data:/data
 
+  api:
+    build:
+      context: .
+      dockerfile: WebApiShop/Dockerfile
+    container_name: web-api-shop
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redis
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+    volumes:
+      - ${APPDATA}/Microsoft/UserSecrets/fa952f4f-70b7-42ce-9e59-d0ab7230e7e3/secrets.json:/app/secrets.json:ro
+
 volumes:
   redis-data:

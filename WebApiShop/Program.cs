@@ -18,6 +18,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Host.UseNLog();
 
+var mountedSecrets = "/app/secrets.json";
+if (File.Exists(mountedSecrets))
+    builder.Configuration.AddJsonFile(mountedSecrets, optional: false, reloadOnChange: false);
+
 var redisConnectionString = builder.Configuration["Redis:ConnectionString"] ?? string.Empty;
 if (!string.IsNullOrWhiteSpace(redisConnectionString))
 {
