@@ -36,12 +36,13 @@ public static class RateLimitMiddleware
         {
             var partitionKey = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 
-            return RateLimitPartition.GetFixedWindowLimiter(
+            return RateLimitPartition.GetSlidingWindowLimiter(
                 partitionKey,
-                _ => new FixedWindowRateLimiterOptions
+                _ => new SlidingWindowRateLimiterOptions
                 {
                     PermitLimit = 100,
                     Window = TimeSpan.FromMinutes(1),
+                    SegmentsPerWindow = 6,
                     QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                     QueueLimit = 0,
                     AutoReplenishment = true
