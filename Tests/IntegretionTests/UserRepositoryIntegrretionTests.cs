@@ -1,4 +1,5 @@
-﻿using Entities;
+﻿using BCrypt.Net;
+using Entities;
 using Repositories;
 using Xunit;
 
@@ -24,7 +25,8 @@ namespace Tests.IntegrationTests
         [Fact]
         public async Task RegisterAsync_WithValidUser_ReturnsUser()
         {
-            var user = new User { Provider = "Local", Email = "test@example.com", Password = "pass123", FirstName = "John", LastName = "Doe" };
+            var hash = BCrypt.Net.BCrypt.HashPassword("pass123");
+            var user = new User { Provider = "Local", Email = "test@example.com", Password = hash, FirstName = "John", LastName = "Doe" };
 
             var result = await _repository.RegisterAsync(user);
 
@@ -33,22 +35,25 @@ namespace Tests.IntegrationTests
         }
 
         [Fact]
-        public async Task LoginAsync_WithValidCredentials_ReturnsUser()
+        public async Task GetByEmailForAuthAsync_WithExistingEmail_ReturnsUser()
         {
-            var user = new User { Provider = "Local", Email = "login@test.com", Password = "secret", FirstName = "A", LastName = "B" };
+            var hash = BCrypt.Net.BCrypt.HashPassword("secret");
+            var user = new User { Provider = "Local", Email = "login@test.com", Password = hash, FirstName = "A", LastName = "B" };
             await _context.Users.AddAsync(user);
             await _context.SaveChangesAsync();
 
-            var result = await _repository.LoginAsync("login@test.com", "secret");
+            var result = await _repository.GetByEmailForAuthAsync("login@test.com");
 
             Assert.NotNull(result);
             Assert.Equal("login@test.com", result.Email);
+            Assert.True(BCrypt.Net.BCrypt.Verify("secret", result.Password));
         }
 
         [Fact]
         public async Task GetByIdAsync_WithValidId_ReturnsUser()
         {
-            var user = new User { Provider = "Local", Email = "user@test.com", Password = "pass", FirstName = "X", LastName = "Y" };
+            var hash = BCrypt.Net.BCrypt.HashPassword("pass");
+            var user = new User { Provider = "Local", Email = "user@test.com", Password = hash, FirstName = "X", LastName = "Y" };
             _context.Users.Add(user);
             _context.SaveChanges();
 
@@ -62,8 +67,8 @@ namespace Tests.IntegrationTests
         public async Task GetAllAsync_ReturnsAllUsers()
         {
             _context.Users.AddRange(
-                new User { Provider = "Local", Email = "user1@test.com", Password = "1", FirstName = "A", LastName = "B" },
-                new User { Provider = "Local", Email = "user2@test.com", Password = "2", FirstName = "C", LastName = "D" }
+                new User { Provider = "Local", Email = "user1@test.com", Password = BCrypt.Net.BCrypt.HashPassword("1"), FirstName = "A", LastName = "B" },
+                new User { Provider = "Local", Email = "user2@test.com", Password = BCrypt.Net.BCrypt.HashPassword("2"), FirstName = "C", LastName = "D" }
             );
             _context.SaveChanges();
 
@@ -76,7 +81,8 @@ namespace Tests.IntegrationTests
         [Fact]
         public async Task UpdateAsync_WithValidUser_UpdatesUser()
         {
-            var user = new User { Provider = "Local", Email = "update@test.com", Password = "old", FirstName = "Old", LastName = "Name" };
+            var hash = BCrypt.Net.BCrypt.HashPassword("old");
+            var user = new User { Provider = "Local", Email = "update@test.com", Password = hash, FirstName = "Old", LastName = "Name" };
             _context.Users.Add(user);
             _context.SaveChanges();
 
@@ -90,7 +96,7 @@ namespace Tests.IntegrationTests
         [Fact]
         public async Task GetAllOrdersAsync_WithExistingOrders_ReturnsOrders()
         {
-            var user = new User { Provider = "Local", Email = "orders@test.com", Password = "p", FirstName = "O", LastName = "User" };
+            var user = new User { Provider = "Local", Email = "orders@test.com", Password = BCrypt.Net.BCrypt.HashPassword("p"), FirstName = "O", LastName = "User" };
             _context.Users.Add(user);
             _context.Statuses.Add(new Status { StatusId = 1, StatusName = "New" });
             _context.SiteTypes.Add(new SiteType { SiteTypeId = 1, SiteTypeName = "Landing", Price = 10 });
@@ -112,21 +118,22 @@ namespace Tests.IntegrationTests
         #region Unhappy Paths
 
         [Fact]
-        public async Task LoginAsync_InvalidPassword_ReturnsNull()
+        public async Task GetByEmailForAuthAsync_WrongEmail_ReturnsNull()
         {
-            var user = new User { Provider = "Local", Email = "wrong@test.com", Password = "correctpass", FirstName = "A", LastName = "B" };
+            var hash = BCrypt.Net.BCrypt.HashPassword("correctpass");
+            var user = new User { Provider = "Local", Email = "wrong@test.com", Password = hash, FirstName = "A", LastName = "B" };
             _context.Users.Add(user);
             _context.SaveChanges();
 
-            var result = await _repository.LoginAsync("wrong@test.com", "wrongpass");
+            var result = await _repository.GetByEmailForAuthAsync("nobody@test.com");
 
             Assert.Null(result);
         }
 
         [Fact]
-        public async Task LoginAsync_NonExistentEmail_ReturnsNull()
+        public async Task GetByEmailForAuthAsync_NonExistentEmail_ReturnsNull()
         {
-            var result = await _repository.LoginAsync("nonexistent@test.com", "anypass");
+            var result = await _repository.GetByEmailForAuthAsync("nonexistent@test.com");
 
             Assert.Null(result);
         }
@@ -142,7 +149,7 @@ namespace Tests.IntegrationTests
         [Fact]
         public async Task GetByEmailAsync_WithUniqueEmail_ReturnsUser()
         {
-            var user = new User { Provider = "Local", UserId = 1, Email = "unique@test.com", Password = "p", FirstName = "A", LastName = "B" };
+            var user = new User { Provider = "Local", UserId = 1, Email = "unique@test.com", Password = BCrypt.Net.BCrypt.HashPassword("p"), FirstName = "A", LastName = "B" };
             _context.Users.Add(user);
             _context.SaveChanges();
 
@@ -154,7 +161,7 @@ namespace Tests.IntegrationTests
         [Fact]
         public async Task GetAllOrdersAsync_NoOrders_ReturnsEmpty()
         {
-            var user = new User { Provider = "Local", Email = "norders@test.com", Password = "p", FirstName = "N", LastName = "O" };
+            var user = new User { Provider = "Local", Email = "norders@test.com", Password = BCrypt.Net.BCrypt.HashPassword("p"), FirstName = "N", LastName = "O" };
             _context.Users.Add(user);
             _context.SaveChanges();
 

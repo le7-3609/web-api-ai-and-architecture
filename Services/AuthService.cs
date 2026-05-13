@@ -1,4 +1,5 @@
 using AutoMapper;
+using BCrypt.Net;
 using DTO;
 using Entities;
 using Microsoft.Extensions.Options;
@@ -35,8 +36,8 @@ public class AuthService : IAuthService
 
     public async Task<(AuthResultDTO? Result, string? Error)> LoginAsync(LoginDTO dto)
     {
-        var user = await _userRepository.LoginAsync(dto.Email, dto.Password);
-        if (user == null)
+        var user = await _userRepository.GetByEmailForAuthAsync(dto.Email);
+        if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.Password))
             return (null, "Invalid email or password.");
 
         user.LastLogin = DateTime.UtcNow;
@@ -57,6 +58,7 @@ public class AuthService : IAuthService
 
         var user = _mapper.Map<User>(dto);
         user.Role = "User";
+        user.Password = BCrypt.Net.BCrypt.HashPassword(dto.Password);
         var created = await _userRepository.RegisterAsync(user);
 
         var result = await IssueTokensAsync(created);

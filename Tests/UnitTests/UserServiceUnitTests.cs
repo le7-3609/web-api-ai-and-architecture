@@ -1,4 +1,5 @@
 using AutoMapper;
+using BCrypt.Net;
 using DTO;
 using Entities;
 using Microsoft.Extensions.Configuration;
@@ -92,14 +93,17 @@ namespace Tests.UnitTests
             var configuration = new Mock<IConfiguration>();
 
             var dto = new RegisterDTO("x@x.com", "X", "Y", "050", "Strong-123!", "Local");
-            var user = new User { UserId = 10, Email = "x@x.com", FirstName = "X", LastName = "Y", Phone = "050", Password = "Strong-123!" };
+            var mappedUser = new User { UserId = 10, Email = "x@x.com", FirstName = "X", LastName = "Y", Phone = "050" };
             var profile = new UserProfileDTO(10, "x@x.com", "X", "Y", "050");
+            User? capturedUser = null;
 
             passwordService.Setup(p => p.PasswordStrength("Strong-123!")).Returns(new PasswordStrengthDTO { Strength = 3 });
             repository.Setup(r => r.GetByEmailAsync("x@x.com", -1)).ReturnsAsync((User)null!);
-            mapper.Setup(m => m.Map<User>(dto)).Returns(user);
-            repository.Setup(r => r.RegisterAsync(user)).ReturnsAsync(user);
-            mapper.Setup(m => m.Map<UserProfileDTO>(user)).Returns(profile);
+            mapper.Setup(m => m.Map<User>(dto)).Returns(mappedUser);
+            repository.Setup(r => r.RegisterAsync(It.IsAny<User>()))
+                      .Callback<User>(u => capturedUser = u)
+                      .ReturnsAsync(mappedUser);
+            mapper.Setup(m => m.Map<UserProfileDTO>(mappedUser)).Returns(profile);
 
             var service = new UserService(repository.Object, passwordService.Object, mapper.Object, configuration.Object);
 
@@ -108,7 +112,11 @@ namespace Tests.UnitTests
             Assert.NotNull(result);
             Assert.NotNull(result.User);
             Assert.Equal(10, result.User!.UserId);
-            repository.Verify(r => r.RegisterAsync(user), Times.Once);
+            // Password must be stored as a BCrypt hash — never plain text
+            Assert.NotNull(capturedUser);
+            Assert.NotEqual("Strong-123!", capturedUser!.Password);
+            Assert.True(BCrypt.Net.BCrypt.Verify("Strong-123!", capturedUser.Password));
+            repository.Verify(r => r.RegisterAsync(It.IsAny<User>()), Times.Once);
         }
 
         private static string BuildMicrosoftJwt(string oid, string preferredUsername, string name)

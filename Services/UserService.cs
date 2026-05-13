@@ -45,6 +45,7 @@ namespace Services
                 return (null, "Email is already in use.");
 
             User user = _mapper.Map<User>(dto);
+            user.Password = BCrypt.Net.BCrypt.HashPassword(dto.Password);
             var created = await _userRepository.RegisterAsync(user);
 
             return (_mapper.Map<UserProfileDTO>(created), null);
@@ -52,8 +53,10 @@ namespace Services
 
         public async Task<UserProfileDTO?> LoginAsync(LoginDTO dto)
         {
-            var user = await _userRepository.LoginAsync(dto.Email, dto.Password);
-            return user == null ? null : _mapper.Map<UserProfileDTO>(user);
+            var user = await _userRepository.GetByEmailForAuthAsync(dto.Email);
+            if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.Password))
+                return null;
+            return _mapper.Map<UserProfileDTO>(user);
         }
 
         public async Task<UserProfileDTO?> UpdateAsync(int id, UpdateUserDTO dto)
@@ -74,7 +77,7 @@ namespace Services
                 var passwordValidation = _passwordService.PasswordStrength(dto.Password);
                 if (passwordValidation == null || passwordValidation.Strength < 2)
                     return null;
-                user.Password = dto.Password;
+                user.Password = BCrypt.Net.BCrypt.HashPassword(dto.Password);
             }
 
             if (!string.IsNullOrEmpty(dto.FirstName))

@@ -27,6 +27,7 @@ The server is built using **ASP.NET Core 9 (Web API)** following modern software
 * **Authentication:** JWT (access + refresh tokens) via `Microsoft.IdentityModel.JsonWebTokens`
 * **Logging:** nLog
 * **Mapping:** AutoMapper
+* **Password Security:** BCrypt.Net-Next (adaptive hashing with automatic salting)
 
 ### Structural Patterns
 * **3-Layer Architecture:**
@@ -35,20 +36,12 @@ The server is built using **ASP.NET Core 9 (Web API)** following modern software
     * **Repository Layer:** Manages data persistence and database interaction.
 * **Dependency Injection:** Used extensively to achieve **Decoupling** between layers.
 * **Asynchronous Programming:** All I/O and database operations are `async/await` based to maximize scalability and thread efficiency.
-* **Data Transfer Objects (DTO):** Implemented using **C# Records** for immutable, concise data handling. This prevents circular dependencies and separates internal entities from API contracts.
+* **Data Transfer Objects (DTO):** Implemented using **C# Records** for immutable, concise data handling. This prevents circular dependencies and separates internal entities from API contracts. Sensitive fields such as password hashes are never included in response DTOs.
 * **Configuration:** Managed externally via `appsettings.json` for environment flexibility.
 * **Security:** JWT secret stored in .NET User Secrets (never committed to source control).
 
 ### Authentication & Authorization (JWT)
-Authentication is handled via a stateless JWT flow with HttpOnly cookies to prevent XSS:
-
-| Endpoint | Description |
-| :--- | :--- |
-| `POST /api/Auth/register` | Register a new user; returns access + refresh tokens as HttpOnly cookies |
-| `POST /api/Auth/login` | Authenticate with email/password; sets auth cookies |
-| `POST /api/Auth/refresh` | Issue a new access token using the refresh token cookie |
-| `POST /api/Auth/logout` | Revoke refresh token and clear auth cookies |
-| `POST /api/Auth/social-login` | Authenticate via a third-party provider (e.g. Google) |
+Authentication is handled via a stateless JWT flow with HttpOnly cookies to prevent XSS.
 
 **Token transport:** Both tokens are set as `HttpOnly + Secure + SameSite=Strict` cookies — never exposed to JavaScript. The refresh token cookie is scoped to `/api/auth/refresh` only.
 
@@ -56,16 +49,23 @@ Authentication is handled via a stateless JWT flow with HttpOnly cookies to prev
 
 **Secret management:** `Jwt:SecretKey` is stored in .NET User Secrets locally and must be provided via environment variable in production. A `secrets.template.json` is included as a reference.
 
-### Caching Strategy (Products)
-Product reads are served through a **cache-aside** pattern backed by Redis:
+### Security — Password Hashing
+Passwords are **never stored in plain text**. On registration and password update, the plain-text password is hashed using **BCrypt** (work-factor 11, salt embedded automatically):
 
-| Operation | Cache behavior |
-| :--- | :--- |
-| `GET /api/Products/{id}` | Read from `product:{id}` key; on miss, fetch from DB and populate cache (TTL 10 min) |
-| `GET /api/Products` | Read from a versioned list key `products:v{n}:{params}`; on miss, fetch and cache (TTL 5 min) |
-| `POST /api/Products` | Write to DB, then increment `products:version` counter — all old list keys become unreachable and expire by TTL |
-| `PUT /api/Products/{id}` | Write to DB, then delete `product:{id}` and increment version counter |
-| `DELETE /api/Products/{id}` | Write to DB, then delete `product:{id}` and increment version counter |
+```csharp
+// Register / change password
+user.Password = BCrypt.Net.BCrypt.HashPassword(dto.Password);
+
+// Login verification (timing-safe)
+bool valid = BCrypt.Net.BCrypt.Verify(dto.Password, user.Password);
+```
+
+* No separate `Salt` column is required — BCrypt embeds the salt inside the hash string.
+* The repository fetches the user by email only; password comparison happens in the service layer, keeping raw credentials out of SQL queries.
+* `UserProfileDTO` (the response record) contains no `Password` field, so the hash is never exposed to API consumers.
+
+### Caching Strategy (Products)
+Product reads are served through a **cache-aside** pattern backed by Redis.
 
 Redis errors are caught and logged — the application always falls back to the database and **never crashes due to a cache failure**.
 

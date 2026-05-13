@@ -1,3 +1,4 @@
+using BCrypt.Net;
 using Moq;
 using Moq.EntityFrameworkCore;
 using Repositories;
@@ -82,16 +83,16 @@ namespace Tests.UnitTests
         }
 
         [Fact]
-        public async Task LoginAsync_CorrectCredentials_ReturnsUser()
+        public async Task GetByEmailForAuthAsync_ExistingEmail_ReturnsUser()
         {
             // Arrange
-            var users = new List<User> { new User { Email = "u@u.com", Password = "123" } };
+            var users = new List<User> { new User { Email = "u@u.com", Password = BCrypt.Net.BCrypt.HashPassword("123") } };
             var mockContext = new Mock<MyShopContext>();
             mockContext.Setup(x => x.Users).ReturnsDbSet(users);
             var repo = new UserRepository(mockContext.Object);
 
             // Act
-            var result = await repo.LoginAsync("u@u.com", "123");
+            var result = await repo.GetByEmailForAuthAsync("u@u.com");
 
             // Assert
             Assert.NotNull(result);
@@ -175,16 +176,15 @@ namespace Tests.UnitTests
         }
 
         [Fact]
-        public async Task LoginAsync_WrongPassword_ReturnsNull()
+        public async Task GetByEmailForAuthAsync_NonExistentEmail_ReturnsNull()
         {
             // Arrange
-            var users = new List<User> { new User { Email = "u@u.com", Password = "123" } };
             var mockContext = new Mock<MyShopContext>();
-            mockContext.Setup(x => x.Users).ReturnsDbSet(users);
+            mockContext.Setup(x => x.Users).ReturnsDbSet(new List<User>());
             var repo = new UserRepository(mockContext.Object);
 
             // Act
-            var result = await repo.LoginAsync("u@u.com", "wrong_pass");
+            var result = await repo.GetByEmailForAuthAsync("ghost@u.com");
 
             // Assert
             Assert.Null(result);

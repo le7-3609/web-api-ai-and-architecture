@@ -25,8 +25,10 @@ if (File.Exists(mountedSecrets))
 var redisConnectionString = builder.Configuration["Redis:ConnectionString"] ?? string.Empty;
 if (!string.IsNullOrWhiteSpace(redisConnectionString))
 {
+    var redisOptions = ConfigurationOptions.Parse(redisConnectionString);
+    redisOptions.AbortOnConnectFail = false;
     builder.Services.AddSingleton<IConnectionMultiplexer>(
-        ConnectionMultiplexer.Connect(redisConnectionString));
+        ConnectionMultiplexer.Connect(redisOptions));
 }
 else
 {
