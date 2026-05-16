@@ -24,6 +24,7 @@ The server is built using **ASP.NET Core 9 (Web API)** following modern software
 * **Framework:** .NET 9 (REST API)
 * **ORM:** Entity Framework Core (Database-First approach)
 * **Caching:** Redis (via Docker Compose) + StackExchange.Redis
+* **Messaging:** Apache Kafka (KRaft mode — no Zookeeper) + Confluent.Kafka
 * **Authentication:** JWT (access + refresh tokens) via `Microsoft.IdentityModel.JsonWebTokens`
 * **Logging:** nLog
 * **Mapping:** AutoMapper
@@ -64,6 +65,17 @@ bool valid = BCrypt.Net.BCrypt.Verify(dto.Password, user.Password);
 * The repository fetches the user by email only; password comparison happens in the service layer, keeping raw credentials out of SQL queries.
 * `UserProfileDTO` (the response record) contains no `Password` field, so the hash is never exposed to API consumers.
 
+### Event-Driven Order Billing (Kafka)
+When an order is placed the API publishes to the `orders` topic. A separate `BillingWorker` consumes those events asynchronously, decoupling billing from the request path.
+
+* **Producer (`OrderEventPublisher`):** `Acks.All` + `EnableIdempotence` for guaranteed delivery; `Flush()` on shutdown to drain in-flight messages.
+* **Consumer (`KafkaConsumerService`):** manual offset commit, per-message DI scope, retry ×3 with exponential back-off.
+* **Dead-Letter Topic (`orders.dead-letter`):** poison messages are forwarded here with diagnostic headers (`x-failure-reason`, `x-failed-at`, etc.) instead of being silently dropped.
+* **Health check:** `KafkaHealthCheck` verifies broker connectivity on every `/healthz` probe.
+* **Infrastructure:** single-node KRaft Kafka (no Zookeeper) + Kafka UI at `http://localhost:8090`.
+
+---
+
 ### Caching Strategy (Products)
 Product reads are served through a **cache-aside** pattern backed by Redis.
 
@@ -95,7 +107,7 @@ While this repository contains the Back-end, it is designed to serve a modern **
 ### Prerequisites
 * .NET 9 SDK
 * SQL Server
-* Docker Desktop (for Redis)
+* Docker Desktop (for Redis, Kafka, and Kafka UI)
 * .NET User Secrets (for `Jwt:SecretKey` — see `secrets.template.json`)
 
 ### Installation & Setup
@@ -108,11 +120,15 @@ While this repository contains the Back-end, it is designed to serve a modern **
     dotnet user-secrets init --project WebApiShop
     dotnet user-secrets set "Jwt:SecretKey" "<your-strong-secret>" --project WebApiShop
     ```
-3.  **Start Redis** (requires Docker Desktop running):
+3.  **Start infrastructure** (Redis + Kafka + Kafka UI — requires Docker Desktop running):
     ```bash
     docker compose up -d
     ```
-    Redis will be available on `localhost:6380`. The default dev password is in `.env` (not committed to git — copy `.env.example` if provided, or set `REDIS_PASSWORD` directly).
+    * Redis → `localhost:6380`
+    * Kafka → `localhost:9093`
+    * Kafka UI → `http://localhost:8090`
+
+    The default dev Redis password is in `.env` (not committed to git — copy `.env.example` if provided, or set `REDIS_PASSWORD` directly).
 4.  **Restore Dependencies:**
     ```bash
     dotnet restore
@@ -121,6 +137,26 @@ While this repository contains the Back-end, it is designed to serve a modern **
     ```bash
     dotnet run --project WebApiShop
     ```
+
+### Verifying Kafka
+```bash
+# Confirm containers are up
+docker ps --filter name=kafka
+
+# Open Kafka UI in browser
+start http://localhost:8090
+
+# Run the BillingWorker (separate terminal)
+dotnet run --project BillingWorker
+
+# The worker logs will show:
+# Billing consumer starting. Topic: 'orders', Group: 'billing-service'
+# Each consumed message: Received message [partition X, offset Y]
+# Each processed bill: Bill {id} processed for Order {id} ...
+
+# Check the dead-letter topic
+# Browse to http://localhost:8090 → Topics → orders.dead-letter
+```
 
 ### Verifying Redis
 ```bash
