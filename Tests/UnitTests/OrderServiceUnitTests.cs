@@ -22,11 +22,12 @@ namespace Tests.UnitTests
         private readonly Mock<ILogger<OrderService>> _mockLogger = new();
         private readonly Mock<IHostEnvironment> _mockHostEnvironment = new();
         private readonly Mock<IOrderPromptBuilder> _mockPromptBuilder = new();
+        private readonly Mock<IOrderEventPublisher> _mockOrderEventPublisher = new();
 
         private OrderService CreateService() => new(
             _mockOrderRepo.Object, _mockMapper.Object, _mockCartService.Object,
             _mockLogger.Object, _mockProductRepo.Object, _mockHostEnvironment.Object,
-            _mockPromptBuilder.Object);
+            _mockPromptBuilder.Object, _mockOrderEventPublisher.Object);
 
         [Fact]
         public async Task AddOrderFromCartAsync_InvalidCartId_Throws()
