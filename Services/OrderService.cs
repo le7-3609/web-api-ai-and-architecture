@@ -17,8 +17,9 @@ namespace Services
         private readonly ILogger<OrderService> _logger;
         private readonly IHostEnvironment _hostEnvironment;
         private readonly IOrderPromptBuilder _promptBuilder;
+        private readonly IOrderEventPublisher _orderEventPublisher;
 
-        public OrderService(IOrderRepository orderRepository, IMapper mapper, ICartService cartService, ILogger<OrderService> logger, IProductRepository productRepository, IHostEnvironment hostEnvironment, IOrderPromptBuilder promptBuilder)
+        public OrderService(IOrderRepository orderRepository, IMapper mapper, ICartService cartService, ILogger<OrderService> logger, IProductRepository productRepository, IHostEnvironment hostEnvironment, IOrderPromptBuilder promptBuilder, IOrderEventPublisher orderEventPublisher)
         {
             _orderRepository = orderRepository;
             _mapper = mapper;
@@ -27,6 +28,7 @@ namespace Services
             _productRepository = productRepository;
             _hostEnvironment = hostEnvironment;
             _promptBuilder = promptBuilder;
+            _orderEventPublisher = orderEventPublisher;
         }
         private async Task<double> CalculateRealSumAsync(List<CartItemDTO> items, double basicSitePrice)
         {
@@ -141,7 +143,9 @@ namespace Services
             order.Orderprompt = await _promptBuilder.BuildPromptAsync(order.BasicSiteId, order.OrderItems);
             var createdOrder = await _orderRepository.AddOrderAsync(order);
             await _cartService.ClearCartAsync(cartId);
-            return _mapper.Map<OrderDetailsDTO>(createdOrder);
+            var orderDto = _mapper.Map<OrderDetailsDTO>(createdOrder);
+            await _orderEventPublisher.PublishOrderCreatedAsync(orderDto);
+            return orderDto;
         }
 
         public async Task<OrderDetailsDTO?> GetByIdAsync(int id)
