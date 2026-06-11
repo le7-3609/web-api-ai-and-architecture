@@ -111,8 +111,6 @@ namespace Tests.UnitTests
 
             _mockProductRepo.Setup(p => p.GetProductByIdAsync(1)).ReturnsAsync(new Product { ProductId = 1, Price = 10 });
             _mockProductRepo.Setup(p => p.GetProductByIdAsync(2)).ReturnsAsync(new Product { ProductId = 2, Price = 20 });
-            _mockPromptBuilder.Setup(p => p.BuildPromptAsync(It.IsAny<long>(), It.IsAny<IEnumerable<OrderItem>>()))
-                .ReturnsAsync("test prompt");
 
             var svc = CreateService();
             await svc.AddOrderFromCartAsync(5);
@@ -142,8 +140,6 @@ namespace Tests.UnitTests
 
             var expectedDto = new OrderDetailsDTO { OrderId = 42, OrderSum = 45 };
             _mockMapper.Setup(m => m.Map<OrderDetailsDTO>(It.IsAny<Order>())).Returns(expectedDto);
-            _mockPromptBuilder.Setup(p => p.BuildPromptAsync(It.IsAny<long>(), It.IsAny<IEnumerable<OrderItem>>()))
-                .ReturnsAsync("test prompt");
 
             var svc = CreateService();
             var result = await svc.AddOrderFromCartAsync(cartId);
@@ -227,6 +223,42 @@ namespace Tests.UnitTests
             await svc.UpdateStatusAsync(dto);
 
             _mockOrderRepo.Verify(r => r.UpdateStatusAsync(It.Is<Order>(o => o.OrderId == 9 && o.Status == 2)), Times.Once);
+        }
+
+        [Fact]
+        public async Task GetOrderPromptAsync_BuildsPromptOnDemand()
+        {
+            var order = new Order
+            {
+                OrderId = 10,
+                BasicSiteId = 3,
+                OrderItems = new List<OrderItem>
+                {
+                    new OrderItem { ProductId = 1, PlatformId = 1 }
+                }
+            };
+
+            _mockOrderRepo.Setup(r => r.GetByIdWithItemsAsync(10)).ReturnsAsync(order);
+            _mockPromptBuilder.Setup(p => p.BuildPromptAsync(3, order.OrderItems))
+                .ReturnsAsync("generated prompt");
+
+            var svc = CreateService();
+            var result = await svc.GetOrderPromptAsync(10);
+
+            Assert.Equal("generated prompt", result);
+            _mockPromptBuilder.Verify(p => p.BuildPromptAsync(3, order.OrderItems), Times.Once);
+        }
+
+        [Fact]
+        public async Task GetOrderPromptAsync_OrderNotFound_ReturnsNull()
+        {
+            _mockOrderRepo.Setup(r => r.GetByIdWithItemsAsync(999)).ReturnsAsync((Order?)null);
+
+            var svc = CreateService();
+            var result = await svc.GetOrderPromptAsync(999);
+
+            Assert.Null(result);
+            _mockPromptBuilder.Verify(p => p.BuildPromptAsync(It.IsAny<long>(), It.IsAny<IEnumerable<OrderItem>>()), Times.Never);
         }
     }
 }

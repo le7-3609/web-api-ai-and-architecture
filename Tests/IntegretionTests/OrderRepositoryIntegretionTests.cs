@@ -1,4 +1,4 @@
-﻿using Entities;
+using Entities;
 using Repositories;
 using Xunit;
 
@@ -26,7 +26,16 @@ namespace Tests.IntegrationTests
         [Fact]
         public async Task GetByIdAsync_WithValidId_ReturnsOrder()
         {
-            var order = new Order { OrderId = 1, OrderSum = 100 };
+            var status = new Status { StatusId = 1, StatusName = "Pending" };
+            await _context.Statuses.AddAsync(status);
+
+            var siteType = new SiteType { SiteTypeId = 1, SiteTypeName = "Blog", Price = 100, SiteTypeNamePrompt = "P", SiteTypeDescriptionPrompt = "P" };
+            await _context.SiteTypes.AddAsync(siteType);
+
+            var basicSite = new BasicSite { BasicSiteId = 1, SiteName = "MySite", SiteTypeId = 1, UserDescreption = "desc" };
+            await _context.BasicSites.AddAsync(basicSite);
+
+            var order = new Order { OrderId = 1, OrderSum = 100, Status = 1, BasicSiteId = 1 };
             await _context.Orders.AddAsync(order);
             await _context.SaveChangesAsync();
 

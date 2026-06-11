@@ -39,8 +39,6 @@ namespace Tests.IntegrationTests
             var loggerMock = new Mock<ILogger<OrderService>>();
             var hostEnvMock = new Mock<IHostEnvironment>();
             var promptBuilderMock = new Mock<IOrderPromptBuilder>();
-            promptBuilderMock.Setup(x => x.BuildPromptAsync(It.IsAny<long>(), It.IsAny<ICollection<OrderItem>>()))
-                .ReturnsAsync("test prompt");
             var orderEventPublisherMock = new Mock<IOrderEventPublisher>();
             orderEventPublisherMock.Setup(x => x.PublishOrderCreatedAsync(It.IsAny<DTO.OrderDetailsDTO>()))
                 .Returns(Task.CompletedTask);

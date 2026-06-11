@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using DTO;
 using Entities;
 using Microsoft.Extensions.Logging;
@@ -140,7 +140,6 @@ namespace Services
 
         private async Task<OrderDetailsDTO> SaveOrderAndClearCartAsync(Order order, int cartId)
         {
-            order.Orderprompt = await _promptBuilder.BuildPromptAsync(order.BasicSiteId, order.OrderItems);
             var createdOrder = await _orderRepository.AddOrderAsync(order);
             await _cartService.ClearCartAsync(cartId);
             var orderDto = _mapper.Map<OrderDetailsDTO>(createdOrder);
@@ -180,8 +179,11 @@ namespace Services
 
         public async Task<string?> GetOrderPromptAsync(int orderId)
         {
-            var order = await _orderRepository.GetByIdAsync(orderId);
-            return order?.Orderprompt;
+            var order = await _orderRepository.GetByIdWithItemsAsync(orderId);
+            if (order == null)
+                return null;
+
+            return await _promptBuilder.BuildPromptAsync(order.BasicSiteId, order.OrderItems);
         }
     }
 }
