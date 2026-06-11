@@ -27,11 +27,11 @@ namespace Services
                 var value = await _db.StringGetAsync(ProductKey(id));
                 if (value.IsNullOrEmpty)
                 {
-                    _logger.LogDebug("Cache miss for product {Id}", id);
+                    _logger.LogInformation("[Cache] MISS product:{Id}", id);
                     return null;
                 }
 
-                _logger.LogDebug("Cache hit for product {Id}", id);
+                _logger.LogInformation("[Cache] HIT  product:{Id}", id);
                 return JsonSerializer.Deserialize<ProductDTO>(value!);
             }
             catch (RedisException ex)
@@ -47,6 +47,7 @@ namespace Services
             {
                 var serialized = JsonSerializer.Serialize(product);
                 await _db.StringSetAsync(ProductKey(id), serialized, SingleProductTtl, When.Always, CommandFlags.None);
+                _logger.LogInformation("[Cache] SET  product:{Id} (TTL {Ttl})", id, SingleProductTtl);
             }
             catch (RedisException ex)
             {
@@ -61,11 +62,11 @@ namespace Services
                 var value = await _db.StringGetAsync(cacheKey);
                 if (value.IsNullOrEmpty)
                 {
-                    _logger.LogDebug("Cache miss for product list key {Key}", cacheKey);
+                    _logger.LogInformation("[Cache] MISS list:{Key}", cacheKey);
                     return (null, 0);
                 }
 
-                _logger.LogDebug("Cache hit for product list key {Key}", cacheKey);
+                _logger.LogInformation("[Cache] HIT  list:{Key}", cacheKey);
                 var cached = JsonSerializer.Deserialize<CachedProductList>(value!);
                 return cached is null ? (null, 0) : (cached.Items, cached.TotalCount);
             }
@@ -83,6 +84,7 @@ namespace Services
                 var payload = new CachedProductList(items.ToList(), totalCount);
                 var serialized = JsonSerializer.Serialize(payload);
                 await _db.StringSetAsync(cacheKey, serialized, ProductListTtl);
+                _logger.LogInformation("[Cache] SET  list:{Key} ({Count} items, TTL {Ttl})", cacheKey, totalCount, ProductListTtl);
             }
             catch (RedisException ex)
             {
@@ -95,7 +97,7 @@ namespace Services
             try
             {
                 await _db.KeyDeleteAsync(ProductKey(id));
-                _logger.LogDebug("Invalidated cache for product {Id}", id);
+                _logger.LogInformation("[Cache] INVALIDATED product:{Id}", id);
             }
             catch (RedisException ex)
             {
@@ -108,7 +110,7 @@ namespace Services
             try
             {
                 await _db.StringIncrementAsync(VersionKey);
-                _logger.LogDebug("Incremented product list cache version");
+                _logger.LogInformation("[Cache] INVALIDATED all product lists (version bumped)");
             }
             catch (RedisException ex)
             {

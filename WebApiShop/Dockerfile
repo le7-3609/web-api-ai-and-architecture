@@ -11,7 +11,7 @@ COPY DTO/DTO.csproj DTO/
 RUN dotnet restore WebApiShop/WebApiShop.csproj
 
 COPY . .
-RUN dotnet publish WebApiShop/WebApiShop.csproj -c Release -o /app/publish --no-restore
+RUN dotnet publish WebApiShop/WebApiShop.csproj -c Release -o /app/publish
 
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
 WORKDIR /app

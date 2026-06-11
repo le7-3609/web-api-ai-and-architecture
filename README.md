@@ -124,11 +124,22 @@ While this repository contains the Back-end, it is designed to serve a modern **
     ```bash
     docker compose up -d
     ```
-    * Redis → `localhost:6380`
-    * Kafka → `localhost:9093`
-    * Kafka UI → `http://localhost:8090`
 
-    The default dev Redis password is in `.env` (not committed to git — copy `.env.example` if provided, or set `REDIS_PASSWORD` directly).
+    | Container | Purpose | Local address |
+    |---|---|---|
+    | `redis` | Product read cache (cache-aside pattern) | `localhost:6380` |
+    | `kafka` | Order event message broker | `localhost:9093` |
+    | `kafka-ui` | Kafka browser UI | `http://localhost:8090` |
+    | `web-api-shop` | ASP.NET Core API (Docker build) | `http://localhost:8080` |
+
+    > **When to run this command:**
+    > - Every time Docker Desktop was restarted or the PC rebooted (containers don't survive unless Docker Desktop is set to auto-start on login).
+    > - First time on a new machine (Docker will pull images automatically).
+    > - After `docker compose down`.
+    > - After code changes to rebuild the API image: `docker compose build api ; docker compose up -d`
+    > - If containers are already `Up` (`docker ps`), you can skip this step and just run the .NET API.
+
+    The default dev Redis password is in `.env` (not committed to git — copy `.env.example` and set `REDIS_PASSWORD`).
 4.  **Restore Dependencies:**
     ```bash
     dotnet restore

@@ -15,16 +15,26 @@ namespace Services
     {
         private readonly ISubCategoryRepository _subCategoryRepository;
         private readonly IMapper _mapper;
-        public SubCategoryService(ISubCategoryRepository subCategoryRepository, IMapper mapper)
+        private readonly ISubCategoryCacheService _cache;
+
+        public SubCategoryService(ISubCategoryRepository subCategoryRepository, IMapper mapper, ISubCategoryCacheService cache)
         {
             _mapper = mapper;
             this._subCategoryRepository = subCategoryRepository;
+            _cache = cache;
         }
 
         async public Task<(IEnumerable<SubCategoryDTO>, int TotalCount)> GetSubCategoryAsync(int position, int skip, string? desc, int?[] mainCategoryIds)
         {
+            var cacheKey = await _cache.BuildListCacheKeyAsync(position, skip, desc, mainCategoryIds);
+            var (cachedItems, cachedTotal) = await _cache.GetSubCategoryListAsync(cacheKey);
+            if (cachedItems is not null)
+                return (cachedItems, cachedTotal);
+
             var (subCategories, totalCount) = await _subCategoryRepository.GetSubCategoryAsync(position, skip, desc, mainCategoryIds);
             var subCategoriesRes = _mapper.Map<IEnumerable<SubCategoryDTO>>(subCategories);
+
+            await _cache.SetSubCategoryListAsync(cacheKey, subCategoriesRes, totalCount);
             return (subCategoriesRes, TotalCount: totalCount);
         }
 
@@ -45,6 +55,7 @@ namespace Services
             SubCategory category = _mapper.Map<SubCategory>(dto);
             category.SubCategoryPrompt = "vfsghhfg";
             await _subCategoryRepository.UpdateSubCategoryAsync(id, category);
+            await _cache.InvalidateSubCategoryListsAsync();
 
         }
 
@@ -66,6 +77,7 @@ namespace Services
             SubCategory category = _mapper.Map<SubCategory>(dto);
             category.SubCategoryPrompt = "gfasdfghfh";
             category = await _subCategoryRepository.AddSubCategoryAsync(category);
+            await _cache.InvalidateSubCategoryListsAsync();
 
             return _mapper.Map<SubCategoryDTO>(category);
         }
@@ -82,7 +94,11 @@ namespace Services
                 throw new InvalidOperationException("Cannot delete subcategory that has products.");
             }
 
-            return await _subCategoryRepository.DeleteSubCategoryAsync(id);
+            var deleted = await _subCategoryRepository.DeleteSubCategoryAsync(id);
+            if (deleted)
+                await _cache.InvalidateSubCategoryListsAsync();
+
+            return deleted;
         }
     }
 }

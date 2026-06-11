@@ -9,6 +9,16 @@ namespace Tests.UnitTests
 {
     public class SubCategoryServiceUnitTests
     {
+        private static Mock<ISubCategoryCacheService> BuildNoOpCache()
+        {
+            var mockCache = new Mock<ISubCategoryCacheService>();
+            mockCache.Setup(c => c.GetSubCategoryListAsync(It.IsAny<string>())).ReturnsAsync(((IEnumerable<SubCategoryDTO>?)null, 0));
+            mockCache.Setup(c => c.SetSubCategoryListAsync(It.IsAny<string>(), It.IsAny<IEnumerable<SubCategoryDTO>>(), It.IsAny<int>())).Returns(Task.CompletedTask);
+            mockCache.Setup(c => c.BuildListCacheKeyAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string?>(), It.IsAny<int?[]>())).ReturnsAsync("test-key");
+            mockCache.Setup(c => c.InvalidateSubCategoryListsAsync()).Returns(Task.CompletedTask);
+            return mockCache;
+        }
+
         [Fact]
         public async Task AddSubCategoryAsync_WhenMainCategoryMissing_ThrowsInvalidOperationException()
         {
@@ -18,7 +28,7 @@ namespace Tests.UnitTests
             repository.Setup(r => r.GetByNameAsync("Landing")).ReturnsAsync((SubCategory)null!);
             repository.Setup(r => r.MainCategoryExistsAsync(99)).ReturnsAsync(false);
 
-            var service = new SubCategoryService(repository.Object, mapper.Object);
+            var service = new SubCategoryService(repository.Object, mapper.Object, BuildNoOpCache().Object);
 
             await Assert.ThrowsAsync<InvalidOperationException>(() =>
                 service.AddSubCategoryAsync(new AddSubCategoryDTO(99, "Landing", "p", "img", "desc")));
@@ -41,7 +51,7 @@ namespace Tests.UnitTests
             repository.Setup(r => r.AddSubCategoryAsync(It.IsAny<SubCategory>())).ReturnsAsync(saved);
             mapper.Setup(m => m.Map<SubCategoryDTO>(saved)).Returns(mappedDto);
 
-            var service = new SubCategoryService(repository.Object, mapper.Object);
+            var service = new SubCategoryService(repository.Object, mapper.Object, BuildNoOpCache().Object);
 
             var result = await service.AddSubCategoryAsync(dto);
 
@@ -56,7 +66,7 @@ namespace Tests.UnitTests
             var mapper = new Mock<IMapper>();
             repository.Setup(r => r.GetSubCategoryByIdAsync(99)).ReturnsAsync((SubCategory)null!);
 
-            var service = new SubCategoryService(repository.Object, mapper.Object);
+            var service = new SubCategoryService(repository.Object, mapper.Object, BuildNoOpCache().Object);
 
             var result = await service.DeleteSubCategoryAsync(99);
 
@@ -71,7 +81,7 @@ namespace Tests.UnitTests
             repository.Setup(r => r.GetSubCategoryByIdAsync(1)).ReturnsAsync(new SubCategory { SubCategoryId = 1, SubCategoryName = "Test" });
             repository.Setup(r => r.HasProductsAsync(1)).ReturnsAsync(true);
 
-            var service = new SubCategoryService(repository.Object, mapper.Object);
+            var service = new SubCategoryService(repository.Object, mapper.Object, BuildNoOpCache().Object);
 
             var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => service.DeleteSubCategoryAsync(1));
             Assert.Contains("products", ex.Message, StringComparison.OrdinalIgnoreCase);
@@ -87,7 +97,7 @@ namespace Tests.UnitTests
             repository.Setup(r => r.HasProductsAsync(1)).ReturnsAsync(false);
             repository.Setup(r => r.DeleteSubCategoryAsync(1)).ReturnsAsync(true);
 
-            var service = new SubCategoryService(repository.Object, mapper.Object);
+            var service = new SubCategoryService(repository.Object, mapper.Object, BuildNoOpCache().Object);
 
             var result = await service.DeleteSubCategoryAsync(1);
 

@@ -20,6 +20,19 @@ public class OrderEventPublisher : IOrderEventPublisher, IDisposable
 
         var config = new ProducerConfig { BootstrapServers = settings.BootstrapServers };
         _producer = new ProducerBuilder<string, string>(config).Build();
+
+        // Probe Kafka connectivity at construction time so failures appear in logs immediately
+        try
+        {
+            using var adminClient = new AdminClientBuilder(
+                new AdminClientConfig { BootstrapServers = settings.BootstrapServers }).Build();
+            adminClient.GetMetadata(TimeSpan.FromSeconds(5));
+            _logger.LogInformation("[Startup] Kafka bootstrap probe OK — {BootstrapServers}", settings.BootstrapServers);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[Startup] Kafka bootstrap probe FAILED — {BootstrapServers}", settings.BootstrapServers);
+        }
     }
 
     public async Task PublishOrderCreatedAsync(OrderDetailsDTO order)

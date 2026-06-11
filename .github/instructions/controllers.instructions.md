@@ -24,12 +24,47 @@ Controller-layer guidance for this solution:
 - Direct EF Core or `DbContext` usage.
 - Repository calls from controllers.
 - Complex mapping logic that belongs to services/AutoMapper.
+- Direct Redis or Kafka calls — these are abstracted behind service interfaces (`IProductCacheService`, `IOrderEventPublisher`).
+
+## Authentication & Authorization
+
+- Use `[Authorize]` attribute on endpoints that require authentication. All claims are populated by the JWT middleware pipeline.
+- Use `[AllowAnonymous]` explicitly on public endpoints (login, register, social-login, password-strength) even when the controller itself doesn't have a class-level `[Authorize]`.
+- Extract the current user's ID from claims: `User.FindFirstValue(ClaimTypes.NameIdentifier)`.
+- Extract other claims: `ClaimTypes.Email`, `ClaimTypes.Role`, `ClaimTypes.GivenName`, `ClaimTypes.Surname`.
+- The `AuthController` is the only controller that directly interacts with `IAuthCookieService` to set/delete HttpOnly cookies. Other controllers rely on the middleware pipeline for auth.
+- Do **not** return tokens in response bodies — they are transported exclusively via HttpOnly cookies set by `AuthCookieService`.
+
+### Auth controller patterns
+
+```csharp
+// Login/Register — set cookies, return user info only (no tokens in body)
+var (result, error) = await _authService.LoginAsync(dto);
+if (result == null) return Unauthorized(error);
+_authCookieService.SetAuthCookies(result.AccessToken, result.RefreshToken);
+return Ok(result.UserInfo);
+
+// Logout — clear DB token + delete cookies
+await _authService.LogoutAsync(userId);
+_authCookieService.DeleteAuthCookies();
+return NoContent();
+
+// Refresh — read refresh_token cookie, issue new pair
+var rawRefreshToken = _authCookieService.GetRefreshToken();
+```
+
+## Rate limiting
+
+- Rate limiting is applied **globally** via `app.MapControllers().RequireRateLimiting(RateLimitMiddleware.PolicyName)`.
+- Controllers do **not** need per-action rate limit attributes — the global policy covers all endpoints.
+- The rate limiter returns `429 Too Many Requests` with a JSON body automatically — controllers should not handle rate limit logic.
+- If a specific endpoint needs a custom rate limit policy in the future, use `[EnableRateLimiting("PolicyName")]` / `[DisableRateLimiting]` attributes.
 
 ## Status code and response guidance
 
 - Keep status code behavior stable unless explicitly asked to change API contract.
 - Use clear action result patterns already present in the project.
-- Return meaningful responses for common outcomes (success, not found, bad request, conflict when applicable by current conventions).
+- Return meaningful responses for common outcomes (success, not found, bad request, unauthorized, conflict when applicable by current conventions).
 
 ## Return object guidance (action return types)
 
@@ -48,9 +83,10 @@ Controller-layer guidance for this solution:
 - `201 Created`: successful create with response body and location (`CreatedAtAction`).
 - `204 NoContent`: successful operation with no body, or empty result where current endpoint already follows this behavior.
 - `400 BadRequest`: invalid input, mismatched ids, invalid request payload, or service-declared invalid operation.
-- `401 Unauthorized`: authentication/login/token failure scenarios.
+- `401 Unauthorized`: authentication/login/token failure scenarios (invalid credentials, expired tokens, missing auth).
 - `404 NotFound`: requested resource does not exist.
 - `409 Conflict`: duplicate/resource state conflict (for example, item already exists).
+- `429 TooManyRequests`: rate limit exceeded (handled automatically by `RateLimitMiddleware` — not set manually in controllers).
 
 ## CRUD status expectations
 
@@ -88,7 +124,7 @@ Controller-layer guidance for this solution:
 
 ## Status consistency rules
 
-- Preserve each endpoint’s existing status semantics unless a contract change is explicitly requested.
+- Preserve each endpoint's existing status semantics unless a contract change is explicitly requested.
 - Do not return `200` with `null` body for missing resources when endpoint currently uses `404` or `204`.
 - For list endpoints, keep the existing behavior (`204` or `404` for empty lists) per controller convention instead of introducing a new pattern ad hoc.
 - If service throws domain exceptions already mapped by middleware, do not duplicate broad exception translation in controller actions.
@@ -96,8 +132,9 @@ Controller-layer guidance for this solution:
 ## Validation and error handling
 
 - Prefer service-layer validation and business guards.
-- Let centralized middleware handle exception formatting and logging.
+- Let centralized `ErrorMiddleware` handle exception formatting and logging.
 - Avoid catch-all handling in controllers unless needed for endpoint-specific behavior.
+- The `ErrorMiddleware` catches all unhandled exceptions and returns a generic `500 Internal Server Error`.
 
 ## Contract consistency checklist for controller changes
 
@@ -107,7 +144,8 @@ When changing controller behavior, verify the full slice:
 2. Service interface (`I*Service`) and implementation support the action.
 3. AutoMapper profile (`Services/Mapper.cs`) is updated if DTO/entity shape changed.
 4. DI registrations in `WebApiShop/Program.cs` are present for new services.
-5. Relevant tests are added/updated.
+5. `[Authorize]` / `[AllowAnonymous]` attributes are correct for the endpoint's auth requirements.
+6. Relevant tests are added/updated.
 
 ## Style and scope
 

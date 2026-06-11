@@ -63,6 +63,7 @@ builder.Services.AddScoped<IMainCategoryService, MainCategoryService>();
 
 builder.Services.AddScoped<ISubCategoryRepository, SubCategoryRepository>();
 builder.Services.AddScoped<ISubCategoryService, SubCategoryService>();
+builder.Services.AddScoped<ISubCategoryCacheService, SubCategoryCacheService>();
 
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IOrderService, OrderService>();

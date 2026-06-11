@@ -5,7 +5,7 @@ services:
     restart: unless-stopped
     ports:
       - "6380:6379"
-    command: redis-server --requirepass ${REDIS_PASSWORD}
+    command: redis-server --requirepass ${REDIS_PASSWORD:-dev-password-change-me}
     volumes:
       - redis-data:/data
 
@@ -56,6 +56,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - KafkaSettings__BootstrapServers=kafka:9092
+      - Redis__ConnectionString=redis:6379,password=${REDIS_PASSWORD:-dev-password-change-me},abortConnect=false
     volumes:
       - ${APPDATA}/Microsoft/UserSecrets/fa952f4f-70b7-42ce-9e59-d0ab7230e7e3/secrets.json:/app/secrets.json:ro
 
